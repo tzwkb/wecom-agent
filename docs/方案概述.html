@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WeCom Agent Skill — 方案概述</title>
+<style>
+  :root {
+    --bg:#0d1117; --card:#161b22; --border:#30363d; --text:#c9d1d9;
+    --muted:#8b949e; --accent:#58a6ff; --green:#3fb950; --orange:#d2991d;
+    --red:#f85149; --purple:#a371f7;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    line-height:1.75; max-width:860px; margin:0 auto; padding:48px 24px;
+  }
+  h1 { font-size:2.1em; margin-bottom:6px; }
+  h1 small { display:block; font-size:0.42em; color:var(--muted); font-weight:normal; margin-top:10px; letter-spacing:0.5px; }
+  h2 { font-size:1.45em; margin:46px 0 14px; padding-bottom:8px; border-bottom:2px solid var(--border); color:var(--accent); }
+  h3 { font-size:1.12em; margin:22px 0 8px; color:#f0f6fc; }
+  p { margin:10px 0; }
+  ul,ol { padding-left:22px; margin:10px 0; }
+  li { margin:6px 0; }
+  .lead { font-size:1.12em; color:#e6edf3; background:var(--card); border-left:3px solid var(--accent); padding:16px 20px; border-radius:0 8px 8px 0; margin:20px 0; }
+  table { width:100%; border-collapse:collapse; margin:16px 0; font-size:0.93em; }
+  th,td { border:1px solid var(--border); padding:11px 15px; text-align:left; vertical-align:top; }
+  th { background:#1c2333; font-weight:600; }
+  tr:nth-child(even){ background:#0d1117; }
+  .cards { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:18px 0; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:20px 22px; }
+  .card h3 { margin-top:0; display:flex; align-items:center; gap:8px; }
+  .pill { display:inline-block; padding:2px 10px; border-radius:20px; font-size:0.75em; font-weight:600; }
+  .p-green{ background:#1a3a2a; color:var(--green);} .p-orange{ background:#3a2c1a; color:var(--orange);} .p-blue{ background:#1a2a3a; color:var(--accent);}
+  .meta { color:var(--muted); font-size:0.9em; margin-bottom:8px; }
+  .vs { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:18px 22px; margin:18px 0; }
+  .check { color:var(--green); font-weight:700; } .cross{ color:var(--red); font-weight:700; }
+  .warn { background:#2a1a1a; border:1px solid #4a2a2a; border-radius:8px; padding:14px 20px; margin:18px 0; }
+  .warn h3{ color:var(--red); margin-top:0; }
+  .flow { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:22px; margin:18px 0; text-align:center; font-size:0.95em; }
+  .flow .step { display:inline-block; background:#1c2333; border:1px solid var(--border); border-radius:8px; padding:10px 16px; margin:6px; }
+  .flow .arrow { color:var(--accent); margin:0 4px; }
+  hr { border:none; border-top:1px solid var(--border); margin:42px 0; }
+  @media(max-width:680px){ .cards{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<h1>WeCom Agent Skill
+  <small>让团队每个人的 AI 助手，直接连上企业微信干活</small>
+</h1>
+<p class="meta">方案概述 · 2026-06 · 面向：团队成员 / 决策者（非技术向）</p>
+
+<div class="lead">
+一句话：把企业微信变成 AI 能直接操作的工具。同事不用懂技术，对自己的 AI 助手说一句话，就能发通知、查同事、记日程、读消息、做总结——AI 替他在企业微信里完成。
+</div>
+
+<!-- ───────── -->
+<h2>这个 skill 解决什么问题</h2>
+
+<p>现在大家用企业微信都是<strong>手动操作</strong>：自己翻聊天、自己发消息、自己整理待办。AI 助手帮不上忙，因为它<strong>够不着</strong>企业微信。</p>
+
+<p>这个 skill 就是给 AI 助手装上一只"手"，让它能真正伸进企业微信里操作。装好之后，团队里任何人都能这样用：</p>
+
+<ul>
+  <li>"帮我把今天的会议纪要发到项目群" → AI 直接发出去</li>
+  <li>"本地化部有哪些人？" → AI 查通讯录列给你</li>
+  <li>"下周一上午跟客户的会帮我建个日程" → AI 建好</li>
+  <li>"总结一下我和张总这周聊了什么、有哪些待办" → AI 读消息、整理好</li>
+</ul>
+
+<!-- ───────── -->
+<h2>两大能力</h2>
+
+<div class="cards">
+  <div class="card">
+    <h3>🟢 主动操作 <span class="pill p-green">较快落地</span></h3>
+    <p>让 AI 替你在企业微信里<strong>做事</strong>：</p>
+    <ul>
+      <li>发消息 / 发通知</li>
+      <li>查通讯录、找人</li>
+      <li>建日程、约会议</li>
+      <li>记待办、写文档</li>
+    </ul>
+    <p class="meta">用企业微信官方通道，安全合规，不限团队规模。</p>
+  </div>
+  <div class="card">
+    <h3>🔵 读取消息 <span class="pill p-orange">需先攻关</span></h3>
+    <p>让 AI 帮你<strong>读和理解</strong>自己的聊天：</p>
+    <ul>
+      <li>总结某段对话</li>
+      <li>提取聊天里的待办</li>
+      <li>搜索"谁提过某件事"</li>
+      <li>梳理最近谁找过你</li>
+    </ul>
+    <p class="meta">只读你自己设备、自己账号能看到的消息，等同于个人数据导出。</p>
+  </div>
+</div>
+
+<p>两个能力合起来，AI 助手就既能"看懂"你的企业微信，又能"动手"帮你处理——形成完整闭环。</p>
+
+<!-- ───────── -->
+<h2>它怎么用（落地后）</h2>
+
+<div class="flow">
+  <span class="step">同事对自己的 AI 说一句话</span>
+  <span class="arrow">→</span>
+  <span class="step">AI 调用这个 skill</span>
+  <span class="arrow">→</span>
+  <span class="step">企业微信里事情办好</span>
+</div>
+
+<p>同事侧<strong>零学习成本</strong>：不用记命令、不用懂参数、不用扫码配置。我们把复杂的部分一次性做好、打包，他们装上就能用自然语言驱动。</p>
+
+<!-- ───────── -->
+<h2>为什么自己做，而不是用现成工具</h2>
+
+<div class="vs">
+<p>市面上有官方的现成 CLI 工具，但对我们不合适：</p>
+<table>
+<tr><th>对比</th><th>现成官方工具</th><th>我们自己做</th></tr>
+<tr><td>给非技术同事用</td><td><span class="cross">✗</span> 要扫码、记凭证、懂参数</td><td><span class="check">✓</span> 配好即用，说话就行</td></tr>
+<tr><td>团队规模</td><td><span class="cross">✗</span> 限 10 人以下</td><td><span class="check">✓</span> 不限</td></tr>
+<tr><td>能力范围</td><td><span class="cross">✗</span> 锁死固定功能</td><td><span class="check">✓</span> 想加就加，技术同事可扩展</td></tr>
+<tr><td>读聊天记录</td><td><span class="cross">✗</span> 要额外付费开通、按人头收钱</td><td><span class="check">✓</span> 本地读自己的，不花钱</td></tr>
+<tr><td>数据通道</td><td><span class="cross">✗</span> 经第三方服务器中转</td><td><span class="check">✓</span> 直连官方 / 纯本地</td></tr>
+</table>
+<p class="meta">现成工具卡在"非技术人员嫌难、技术人员嫌限制多"的尴尬位置。我们自己做，两头都补上。</p>
+</div>
+
+<!-- ───────── -->
+<h2>分发方式</h2>
+<p>做成一个<strong>可打包的 skill</strong>，发给同事：</p>
+<ul>
+  <li>同一个企业内，配好一次凭证，团队共享，开箱即用</li>
+  <li>支持 <strong>Mac 和 Windows 双端</strong></li>
+  <li>谁的 AI 助手都能接（不限定某一个）</li>
+</ul>
+
+<!-- ───────── -->
+<h2>使用边界（重要）</h2>
+<div class="warn">
+<h3>⚠️ 几条红线</h3>
+<ul>
+  <li><strong>只读自己的</strong>：读取消息能力仅限本人设备、本人账号能看到的内容，等同于导出自己的通讯数据，不用来看别人的</li>
+  <li><strong>合规优先</strong>：企业微信数据属公司资产，使用前确认公司政策允许</li>
+  <li><strong>数据不外传</strong>：全程在本机处理，不上传到任何外部</li>
+</ul>
+</div>
+
+<!-- ───────── -->
+<h2>当前进展与下一步</h2>
+<table>
+<tr><th>能力</th><th>进展</th><th>下一步</th></tr>
+<tr><td>主动操作</td><td>核心已搭好，待真实账号联调</td><td>用真实凭证跑通、验证</td></tr>
+<tr><td>读取消息</td><td>方案已定，数据已定位</td><td>攻关取数环节（关键一步）</td></tr>
+<tr><td>打包分发</td><td>项目结构已就位</td><td>两能力打通后统一封装</td></tr>
+</table>
+
+<hr>
+<p style="color:var(--muted); font-size:0.85em;">
+本文为方向性概述，不含技术细节。技术实现方案见同目录另一份文档。
+</p>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "_说明": "复制本文件为 config.json 并填入凭证。也可改用环境变量 WECOM_CORPID/WECOM_SECRET/WECOM_AGENTID。config.json 已在 .gitignore，勿提交。",
+  "corpid": "企业ID（管理后台 → 我的企业 → 企业信息底部）",
+  "secret": "自建应用的 Secret（应用详情页查看）",
+  "agentid": "自建应用的 AgentId（应用详情页，发消息时用）"
+}
