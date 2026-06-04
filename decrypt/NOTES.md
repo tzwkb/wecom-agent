@@ -113,3 +113,15 @@ DB 页 key 只在登录设置, 登录拒 frida。**非 frida 注入**绕过:
 - 静态分析定位WCDB内部AES函数地址 → inline hook(无符号, 需IDA/Ghidra逆向)。
 - hook静态sqlite3的sqlite3_column_text(无导出符号)。
 - hook WCDB C++ getMessage API(需逆向符号)。
+
+## 2026-06-04 真正攻克 —— 修正上面"壁垒"结论
+
+上面"消息库静态crypto壁垒/未破"是**误判**。真相：消息库**不是 SQLCipher**，是 **wxSQLite3 AES-128-CBC**(plaintext-header)；1023 个捕获 key 全 MISS 是因为一直按 SQLCipher 参数试解、家族就错了；也**不需要 carve 解密页、不需要逆向 WCDB AES**。
+
+正解（已实跑，5458 条结构化导出）：
+1. 识别方案：Info.db 头 `a41d9137 5995d7d6` + offset16 明文 SQLite 头 = wxSQLite3，非 SQLCipher 随机 salt。
+2. 算法：AES-128-CBC；页 key=`md5(rawkey16+页号LE+"sAlT")`；IV=SQLite3MultipleCiphers LCG-md5；无 HMAC；reserve=0；页1 还原 8-15→16-23。
+3. 取 key：**扫活进程内存找 16B rawkey**（只在内存、非 hex 字面量）。`task_for_pid`+`mach_vm_read` 只读，每 16B 窗口用 CommonCrypto C 校验器 `validate.dylib` 单块验页1，原生速度，~5.7GB 命中。
+4. 离线按算法解 profile 下 53 库 → 解析 `MESSAGE` 表。
+
+资产/细节见 `docs/解密思路.md`（已重写）与 memory [[wecom-decrypt-breakthrough]]。本 NOTES 上方的失败记录**保留**，作为"别重走"的弯路存档。

@@ -89,7 +89,7 @@ def _out(obj):
 
 def contact(method, args, token, cfg):
     if method == "departments":
-        return _http("GET", "/cgi-bin/department/simplelist", token=token)
+        return _http("GET", "/cgi-bin/department/list", token=token)
     if method == "users":
         return _http("GET", "/cgi-bin/user/simplelist",
                      params={"department_id": args.get("department_id", 1),
@@ -98,13 +98,17 @@ def contact(method, args, token, cfg):
         return _http("GET", "/cgi-bin/user/get",
                      params={"userid": args["userid"]}, token=token)
     if method == "search":
-        r = _http("GET", "/cgi-bin/user/list",
+        # user/list(部门成员详情)2022-08起对通讯录同步新IP下线; 改用 simplelist(含name)本地过滤
+        r = _http("GET", "/cgi-bin/user/simplelist",
                   params={"department_id": args.get("department_id", 1),
                           "fetch_child": 1}, token=token)
         kw = args["keyword"]
         return {"errcode": r.get("errcode"), "errmsg": r.get("errmsg"),
                 "matched": [u for u in r.get("userlist", []) if kw in u.get("name", "")]}
-    _die(f"未知 contact 方法: {method}（可用: departments, users, get, search）")
+    if method == "list_id":
+        return _http("POST", "/cgi-bin/user/list_id",
+                     body={"cursor": args.get("cursor", ""), "limit": args.get("limit", 10000)}, token=token)
+    _die(f"未知 contact 方法: {method}（可用: departments, users, get, search, list_id）")
 
 
 def message(method, args, token, cfg):
@@ -140,8 +144,11 @@ ROUTES = {
     "doc": {
         "create": "/cgi-bin/wedoc/create_doc",
         "get": "/cgi-bin/wedoc/document/get",
+        "edit": "/cgi-bin/wedoc/document/batch_update",
         "del": "/cgi-bin/wedoc/del_doc",
         "rename": "/cgi-bin/wedoc/rename_doc",
+        "sheet_get": "/cgi-bin/wedoc/spreadsheet/get_sheet_range_data",
+        "sheet_edit": "/cgi-bin/wedoc/spreadsheet/batch_update",
     },
 }
 

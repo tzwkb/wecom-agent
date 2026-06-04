@@ -1,64 +1,73 @@
-# wecom-agent — 企业微信 agent 接入 skill
+# wecom-agent — 企业微信 agent skill
 
-让任意 agent（Claude Code / 其他）通过自建应用 API 直连企业微信，发消息、查通讯录、调任意官方接口。**不限企业规模，无扫码，无 90 天续期，命令不过第三方服务器。**
+让本地 agent **读取、分析、(配置后)操作**企业微信。macOS 已验证。
 
-## 一次性配置（管理员做）
+## 能力
 
-### 1. 建自建应用，拿三个凭证
+| 线 | 能力 | 状态 |
+|---|---|---|
+| **B 本地读取** | 解密导出聊天记录、增量监控、通讯录/会话/全文搜索/统计画像、语音转写、媒体导出 | ✅ 已可用 |
+| **A 主动操作** | 发消息、查通讯录、读写编辑在线文档、日程/会议（官方 API） | ⏸️ 代码就绪，待企业可信域名+IP（见 `docs/IT配置请求.md`） |
 
-1. 登录 [企业微信管理后台](https://work.weixin.qq.com/wework_admin) → **应用管理** → **自建** → **创建应用**
-2. 进应用详情页，记下：
-   - **AgentId**（应用 ID）
-   - **Secret**（点「查看」，会推送到你的企业微信）
-3. **我的企业** → **企业信息**，底部记下 **企业ID（CorpID）**
+> 实时接收回调（C）已弃：本地 agent 由用户直接指挥，无需绕企微回调。代码 `recv_server.py`/`agent_worker.py` 封存。
 
-### 2. 开权限（按需）
+## 快速开始（B 本地读取）
 
-应用详情页 → 配置以下能力：
-
-| 你要做的事 | 需要开的权限 |
-|---|---|
-| 发消息给成员 | 默认就有（应用可见范围内） |
-| 读通讯录/成员 | **通讯录同步** 或 在应用「通讯录」权限里勾选可见范围 |
-| 文档/日程/会议 | 对应的接口权限 |
-
-> ⚠️ 通讯录读取受企微隐私策略限制：需在应用可见范围内，且开启通讯录权限。否则返回 `60011`/`48002`。
-
-### 3. 配置 IP 白名单
-
-应用详情页 → **企业可信IP** → 填入运行 agent 的服务器公网 IP。否则调 API 返回 `60020`。
-
-### 4. 填凭证
+前提：企业微信已登录 + 已对企微做 adhoc 重签（去 hardened runtime，见 `docs/解密思路.md`）。
 
 ```bash
-cp config.example.json config.json
-# 编辑 config.json 填入 corpid / secret / agentid
+python3 decrypt/read_wecom.py               # 一键: 扫key→解密→导出 → decrypt/export/messages.csv|json
+python3 decrypt/wecom_local.py stats        # 统计画像(发言/会话排行、按小时/天)
+python3 decrypt/wecom_local.py contacts 张  # 查通讯录(姓名/部门/职位/手机/邮箱)
+python3 decrypt/wecom_local.py search 报价  # 全文搜索消息
+python3 decrypt/wecom_local.py conversations|members <会话>|todo|calendar|media
+python3 decrypt/monitor.py --poll 30        # 增量盯新消息
+python3 decrypt/voice_transcribe.py         # 语音转文字(需 pilk + mlx-whisper)
 ```
 
-或用环境变量：
+key 首次需企微在跑、登录态（活进程内存扫 16B key，只读不注入）；之后存盘复用，无需再扫。
+
+## A 主动操作（官方 API）
+
+需管理员建自建应用拿 `CorpID/Secret/AgentId`（`docs/自建应用配置教程.md`）。企微对国内主体强制要求**可信域名(备案)+可信IP**，须 IT 配合（`docs/IT配置请求.md`）。
+
 ```bash
-export WECOM_CORPID=xxx WECOM_SECRET=xxx WECOM_AGENTID=xxx
+cp config.example.json config.json   # 填凭证(已 gitignore)
+python3 selfcheck.py                  # 联调自检(只读先行)
+python3 wecom.py message text '{"touser":"x","content":"hi"}'
+python3 wecom.py doc edit '{"docid":"..","requests":[..]}'
+```
+命令速查见 `SKILL.md`。
+
+## 结构
+
+```
+wecom.py                          A线 API CLI（contact/message/doc/schedule/meeting/call）
+selfcheck.py                      A线 凭证联调自检
+recv_server.py / agent_worker.py  实时接收(封存)
+decrypt/                          B线 本地解密读取(核心)
+  wxwork_crypto.py                wxSQLite3 AES-128-CBC 解密核心(+自测)
+  wecom_paths.py                  profile 路径自动探测
+  find_key_fast.py + validate.c   活进程内存扫 16B key(C 加速)
+  find_key_offline.py             离线兜底找 key
+  decrypt_wxwork.py               全库解密
+  export_wxwork.py                结构化导出(真名/类型/卡片/文件/文档)
+  monitor.py                      增量监控
+  wecom_local.py                  本地查询(通讯录/会话/搜索/统计/待办/日程/媒体)
+  voice_transcribe.py             缓存语音 SILK→whisper 转写
+  read_wecom.py                   一键封装
+  NOTES.md                        解密调查时间线
+  legacy/                         废弃探索(旧 carve/frida/注入方案)
+docs/                             解密思路 / 自建应用配置教程 / IT配置请求 / 开发计划
 ```
 
-## 验证
+## 隐私与安全
 
-```bash
-python3 wecom.py contact list_departments
-# 成功返回部门列表；token 自动获取并缓存到 .token_cache.json（2h）
-```
+- **仅读本人设备本人账号。** 解密产物（`decrypt/decrypted/`、`export/`、`jobs/`）、凭证 `config.json`、密钥 `wxwork_keys.json` 均 `.gitignore`，不入库。
+- B 线需对企微 adhoc 重签（破坏性；日常使用建议重装恢复原签名）。
+- 路径自动探测，不硬编码用户名/profile。
+- 依赖：B 核心仅 `cryptography`；语音另需 `pilk`+`mlx-whisper`（Apple Silicon）。
 
-## 分发给同事
+## 原理
 
-打包整个 `wecom-agent/` 目录发给同事。**删掉 `config.json` 和 `.token_cache.json`**（含密钥）。同一企业同事可共用一套凭证，也可各自填。
-
-零依赖（仅 Python 3 标准库），无需 pip install。
-
-## 命令参考
-
-见 [SKILL.md](SKILL.md)。技术同事可用「逃生舱」`call` 直调任意官方 API，不受封装范围限制。
-
-## 安全
-
-- `config.json`、`.token_cache.json`、`all_keys*` 已在 `.gitignore`
-- token 缓存文件权限 `600`
-- 发消息、改日程等写操作建议在 agent 侧加确认
+消息库 = wxSQLite3 AES-128-CBC（非 SQLCipher）。key 仅在登录后进程内存，读出后离线解密。详见 [`docs/解密思路.md`](docs/解密思路.md)。

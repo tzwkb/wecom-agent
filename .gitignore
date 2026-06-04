@@ -7,3 +7,14 @@ __pycache__/
 *.dylib
 decrypt/内存提取输出_raw.txt
 docs/解密消息样本.txt
+
+# 解密产物与密钥(私密数据,绝不进 git)
+decrypt/wxwork_keys.json
+decrypt/decrypted/
+decrypt/export/
+decrypt/validate.dylib
+*.csv
+jobs/
+.token_cache.json
+.venv/
+decrypt/export/voice_transcripts.json

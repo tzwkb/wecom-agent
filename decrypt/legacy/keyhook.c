@@ -9,12 +9,29 @@
 #include <mach/mach.h>
 #include <libkern/OSCacheControl.h>
 #include <unistd.h>
+#include <dirent.h>
 
-#define LOG "/Users/spellbook/Library/Containers/com.tencent.WeWorkMac/Data/dbkey.log"
-#define DUMP "/Users/spellbook/Library/Containers/com.tencent.WeWorkMac/Data/page_dump.bin"
-#define PROF "/Users/spellbook/Library/Containers/com.tencent.WeWorkMac/Data/Documents/Profiles/821FB603491DCFE76AB2D610CB6D9C89/"
+// 路径运行时解析: $HOME + 沙盒容器; profile 自动探测(或 WECOM_PROFILE 覆盖)。不硬编码用户名/profile。
+#define CONTAINER "Library/Containers/com.tencent.WeWorkMac/Data"
+static char g_log[1024], g_dump[1024], g_carve[1024], g_prof[1200];
+static void setup_paths(){
+    const char* home = getenv("HOME"); if(!home||!*home) home = "/tmp";
+    char data[800]; snprintf(data, sizeof(data), "%s/%s", home, CONTAINER);
+    snprintf(g_log,   sizeof(g_log),   "%s/dbkey.log",     data);
+    snprintf(g_dump,  sizeof(g_dump),  "%s/page_dump.bin", data);
+    snprintf(g_carve, sizeof(g_carve), "%s/carve.bin",     data);
+    char prof[300] = "";
+    const char* env = getenv("WECOM_PROFILE");
+    if(env && *env){ snprintf(prof, sizeof(prof), "%s", env); }
+    else {
+        char pdir[900]; snprintf(pdir, sizeof(pdir), "%s/Documents/Profiles", data);
+        DIR* d = opendir(pdir);
+        if(d){ struct dirent* e; while((e = readdir(d))){ if(e->d_name[0] != '.'){ snprintf(prof, sizeof(prof), "%s", e->d_name); break; } } closedir(d); }
+    }
+    snprintf(g_prof, sizeof(g_prof), "%s/Documents/Profiles/%s/", data, prof);
+}
 
-static void logmsg(const char* m){ FILE*f=fopen(LOG,"a"); if(f){fprintf(f,"%s\n",m);fclose(f);} }
+static void logmsg(const char* m){ FILE*f=fopen(g_log,"a"); if(f){fprintf(f,"%s\n",m);fclose(f);} }
 
 // 加载多个db做匹配锚点
 #define NDB 3
@@ -22,7 +39,7 @@ static const char* dbnames[NDB]={"Messages1/Info.db","Messages1/Session.db","Mes
 static unsigned char* g_db[NDB]={0}; static long g_sz[NDB]={0};
 static void load_dbs(){
     for(int i=0;i<NDB;i++){
-        char path[512]; snprintf(path,sizeof(path),"%s%s",PROF,dbnames[i]);
+        char path[512]; snprintf(path,sizeof(path),"%s%s",g_prof,dbnames[i]);
         FILE*f=fopen(path,"rb"); if(!f){continue;}
         fseek(f,0,SEEK_END); g_sz[i]=ftell(f); fseek(f,0,SEEK_SET);
         g_db[i]=malloc(g_sz[i]); fread(g_db[i],1,g_sz[i],f); fclose(f);
@@ -66,7 +83,7 @@ static void do_dump(int fn,const unsigned char* in,const unsigned char* out,int 
     if(g_n>=3000)return;
     if(len<512||len>8192)return;
     long m=match(in); if(m<0)return;
-    FILE*f=fopen(DUMP,"ab");
+    FILE*f=fopen(g_dump,"ab");
     if(f){ int n=len>4096?4096:len;
         fwrite(&fn,4,1,f); fwrite(&m,8,1,f); fwrite(&n,4,1,f); fwrite(out,1,n,f); fclose(f); g_n++;
         if(g_n<=3){ char b[64]; snprintf(b,sizeof(b),"DUMP fn=%d m=%ld len=%d",fn,m,n); logmsg(b);} }
@@ -90,7 +107,6 @@ static void h_v8(const unsigned char* in,unsigned char* out,size_t len,const voi
 
 
 #include <pthread.h>
-#define CARVE "/Users/spellbook/Library/Containers/com.tencent.WeWorkMac/Data/carve.bin"
 extern kern_return_t mach_vm_region(vm_map_t,mach_vm_address_t*,mach_vm_size_t*,vm_region_flavor_t,vm_region_info_t,mach_msg_type_number_t*,mach_port_t*);
 extern kern_return_t mach_vm_read_overwrite(vm_map_t,mach_vm_address_t,mach_vm_size_t,mach_vm_address_t,mach_vm_size_t*);
 static void* carve_thread(void* arg){
@@ -100,7 +116,7 @@ static void* carve_thread(void* arg){
     mach_vm_address_t addr=0; mach_vm_size_t size=0;
     vm_region_basic_info_data_64_t info; mach_msg_type_number_t cnt; mach_port_t obj;
     int dumped=0;
-    FILE* out=fopen(CARVE,"wb");
+    FILE* out=fopen(g_carve,"wb");
     unsigned char* buf=malloc(65536);
     while(dumped<6000){
         cnt=VM_REGION_BASIC_INFO_COUNT_64;
@@ -132,7 +148,7 @@ static void* carve_thread(void* arg){
 
 __attribute__((constructor))
 static void init(){
-    logmsg("dylib v7 loaded"); load_dbs();
+    setup_paths(); logmsg("dylib v7 loaded"); load_dbs();
     void* a=dlsym(RTLD_DEFAULT,"EVP_DecryptUpdate");
     if(a){tr_evpdu=(evpdu_t)mk_tramp(a); if(tr_evpdu&&patch(a,(void*)h_evpdu)==0)logmsg("evpdu hooked");}
     void* b=dlsym(RTLD_DEFAULT,"CRYPTO_cbc128_decrypt");
