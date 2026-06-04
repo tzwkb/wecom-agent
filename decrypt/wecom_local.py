@@ -10,6 +10,7 @@
   todo                   待办(内容/状态/创建者/提醒)
   calendar               日程
   media [--out 目录]     导出明文缓存的图片+文件(按原名)
+  openfile <名/关键词>   找文档(谁/何时发)→定位本地本体→文本类解析; 图片型/扫描PDF 输出🖼️VISUAL路径交多模态Read
 前提: 先跑 read_wecom.py 解密。用法: wecom_local.py <子命令> [参数]
 """
 import glob
@@ -201,9 +202,55 @@ def cmd_media(args):
     print(f"\n共导出 {total} 个媒体文件 → {out}")
 
 
+def cmd_openfile(args):
+    if not args:
+        sys.exit("用法: openfile <文件名或关键词> [--full]")
+    import read_doc
+    kw = args[0]
+    full = "--full" in args
+    info = _conn(INFO)
+    users = ex._load_user_names(INFO)
+    convn = ex._load_conv_names(info)
+    hits = {}  # 文件名 -> (时间, 发送者, 会话)
+    for r in info.execute("SELECT conv_id, sender_id, send_time, content "
+                          "FROM MESSAGE WHERE content_type IN (15, 16) ORDER BY send_time"):
+        name = ex._filename(r["content"])
+        if name and kw.lower() in name.lower():
+            hits[name] = (ex.fmt_time(r["send_time"]), ex.resolve_sender(r["sender_id"], users),
+                          convn.get(r["conv_id"], r["conv_id"]))
+    info.close()
+    if not hits:
+        sys.exit(f"聊天里没找到含「{kw}」的文档（openfile 只查文件类消息；内联图片请用 media 导出后多模态看）")
+
+    cache = {}  # 真实文件名 -> [本地路径...]（同名可能多份）
+    for f in glob.glob(os.path.join(CACHES, "Files", "**", "*"), recursive=True):
+        if os.path.isfile(f) and os.path.basename(f) != ".DS_Store":
+            cache.setdefault(os.path.basename(f), []).append(f)
+
+    print(f"匹配 {len(hits)} 个文档（含「{kw}」）:\n")
+    for name, (t, s, c) in sorted(hits.items(), key=lambda x: x[1][0]):
+        print(f"📄 《{name}》  {s} {t} @ {c}")
+        paths = cache.get(name, [])
+        if not paths:
+            print("   ✗ 本地未缓存（从没下载/打开过 → 需联网下载本体）\n")
+            continue
+        path = max(paths, key=os.path.getsize)        # 同名多份取最大(最可能是完整版)
+        if len(paths) > 1:
+            print(f"   ⚠️ 本地有 {len(paths)} 份同名缓存, 取最大一份")
+        body = read_doc.read_file(path, limit=20000 if full else 1500)
+        if body.startswith(read_doc.VISUAL_MARK):     # 图片型/扫描 → 交多模态
+            print(f"   {body}")
+        else:
+            print(f"   本地: {path}")
+            print("   ── 内容 ──")
+            for line in body.splitlines():
+                print("   " + line)
+        print()
+
+
 CMDS = {"contacts": cmd_contacts, "conversations": cmd_conversations, "members": cmd_members,
         "search": cmd_search, "stats": cmd_stats, "todo": cmd_todo, "calendar": cmd_calendar,
-        "media": cmd_media}
+        "media": cmd_media, "openfile": cmd_openfile}
 
 
 def main():

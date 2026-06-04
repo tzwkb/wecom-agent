@@ -60,6 +60,7 @@ key 存盘后 ②③与 monitor **无需再扫内存**。离线兜底 `find_key_
 | `stats` | 统计画像（发言排行/会话排行/类型/按小时/按天） |
 | `todo` / `calendar` | 本地待办 / 日程 |
 | `media [--out]` | 导出明文缓存图片+文件（161图+119文件） |
+| `openfile <名/词>` | 聊天里找文档→定位本地本体→**文本类**解析内容（txt/csv/md/xlsx/docx/文本PDF，需 openpyxl/pdfplumber/python-docx）；**图片型/扫描PDF**输出 `🖼️VISUAL <路径>`→你接着用 **Read 多模态直接看**。内联图片(type29)无法按消息定位，用 `media` 导出后多模态浏览 |
 
 语音转写：`python3 decrypt/voice_transcribe.py`（缓存 SILK→whisper large-v3，已验证 6 条）。
 
