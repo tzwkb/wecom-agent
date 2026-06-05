@@ -17,6 +17,7 @@ import ctypes
 import glob
 import json
 import os
+import re
 import sqlite3
 import sys
 from collections import Counter, defaultdict
@@ -273,8 +274,141 @@ def cmd_members(key, args):
         print(f"  {nm}")
 
 
+def _cache(sub):
+    return os.path.join(os.path.dirname(_data_dir()), "Cache", sub)
+
+
+def cmd_calendar(key, args):
+    c = decrypt_db("calendar_r7.db", key)
+    if not c:
+        sys.exit("无 calendar_r7.db")
+    n = 0
+    for st, et, raw in c.execute("SELECT starttime, endtime, rawdata FROM calendar_main_table_v2 ORDER BY starttime DESC"):
+        runs = re.findall(r"[一-鿿][一-鿿A-Za-z0-9（）()·、，。:：\-　 ]*", raw.decode("utf-8", "replace")) if raw else []
+        runs = [x.strip() for x in runs if len(x.strip()) >= 2]
+        title = max(runs, key=len) if runs else "(无中文标题)"
+        print(f"  {ex.fmt_time(st)} ~ {ex.fmt_time(et)[11:]}  {title}")
+        n += 1
+    c.close()
+    print(f"\n{n} 个日程")
+
+
+def cmd_media(key, args):
+    import shutil
+    out = args[args.index("--out") + 1] if "--out" in args else os.path.join(OUT, "media")
+    total = 0
+    for sub in ("File", "Image"):
+        root = _cache(sub)
+        if not os.path.isdir(root):
+            continue
+        dst = os.path.join(out, sub)
+        os.makedirs(dst, exist_ok=True)
+        for f in glob.glob(os.path.join(root, "**", "*"), recursive=True):
+            if os.path.isfile(f):
+                try:
+                    shutil.copy2(f, os.path.join(dst, os.path.basename(f)))
+                    total += 1
+                except OSError:
+                    pass
+        print(f"  {sub}: → {dst}")
+    print(f"\n共导出 {total} 个媒体文件 → {out}（明文缓存，企微存的原名）")
+
+
+def cmd_openfile(key, args):
+    if not args:
+        sys.exit("用法: openfile <文件名或关键词>")
+    import read_doc
+    kw = args[0]
+    cache = {}
+    for f in glob.glob(os.path.join(_cache("File"), "**", "*"), recursive=True):
+        if os.path.isfile(f):
+            cache.setdefault(os.path.basename(f), []).append(f)
+    meta = {}
+    fdb = decrypt_db("file.db", key)
+    if fdb:
+        users, convs, self_uid = load_names(key)
+        for name, sender, conv, rt in fdb.execute("SELECT name, sender_id, conversation_id, receive_time FROM file_table4"):
+            if name:
+                meta.setdefault(str(name), (res_sender(sender, users), res_conv(conv, convs, users, self_uid),
+                                            ex.fmt_time(rt) if rt else ""))
+        fdb.close()
+    hits = {n: p for n, p in cache.items() if kw.lower() in n.lower()}
+    if not hits:
+        sys.exit(f"缓存里没含「{kw}」的文件（只覆盖下载/打开过的）")
+    print(f"匹配 {len(hits)} 个文档:\n")
+    for name, paths in sorted(hits.items()):
+        path = max(paths, key=os.path.getsize)
+        s, cv, t = meta.get(name, ("?", "?", ""))
+        print(f"📄 《{name}》  {s} {t} @ {cv}")
+        body = read_doc.read_file(path, limit=1500)
+        if body.startswith(read_doc.VISUAL_MARK):
+            print(f"   {body}")
+        else:
+            print(f"   本地: {path}\n   ── 内容 ──")
+            for line in body.splitlines():
+                print("   " + line)
+        print()
+
+
+def cmd_voice(key, args):
+    root = _cache("Voice")
+    files = sorted(f for f in glob.glob(os.path.join(root, "**", "*"), recursive=True) if os.path.isfile(f))
+    print(f"缓存语音 {len(files)} 条 @ {root}")
+    try:
+        import pilk
+        from faster_whisper import WhisperModel
+    except ImportError:
+        for f in files[:20]:
+            print(f"  {os.path.getsize(f) // 1024}KB  {os.path.basename(f)}")
+        print("\n转写需: pip install pilk faster-whisper（Windows 用 faster-whisper, 非 Mac 的 mlx-whisper）")
+        return
+    import wave
+    model = WhisperModel("base", device="cpu", compute_type="int8")
+    res = {}
+    for f in files:
+        try:
+            pcm = f + ".pcm"
+            pilk.decode(f, pcm)
+            wav = f + ".wav"
+            with open(pcm, "rb") as p, wave.open(wav, "wb") as w:
+                w.setnchannels(1); w.setsampwidth(2); w.setframerate(24000)
+                w.writeframes(p.read())
+            seg, _ = model.transcribe(wav, language="zh")
+            res[os.path.basename(f)] = "".join(s.text for s in seg).strip()
+        except Exception as e:
+            res[os.path.basename(f)] = f"[转写失败 {e}]"
+    json.dump(res, open(os.path.join(OUT, "voice_transcripts.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    for k, v in res.items():
+        print(f"  {k}: {v[:60]}")
+    print(f"\n{len(res)} 条 → {OUT}\\voice_transcripts.json")
+
+
+def cmd_monitor(key, args):
+    sf = os.path.join(OUT, "monitor_state.json")
+    os.makedirs(OUT, exist_ok=True)
+    wm = json.load(open(sf)).get("watermark", 0) if os.path.exists(sf) else 0
+    users, convs, self_uid = load_names(key)
+    info = decrypt_db("message.db", key)
+    new, hi = [], wm
+    for st, conv, sender, ct, content in info.execute(
+            "SELECT send_time, conversation_id, sender_id, content_type, content "
+            "FROM message_table WHERE send_time > ? ORDER BY send_time", (wm,)):
+        new.append((st, res_conv(conv, convs, users, self_uid), res_sender(sender, users), _content(ct, content)))
+        hi = max(hi, st or 0)
+    info.close()
+    json.dump({"watermark": hi}, open(sf, "w"))
+    if wm == 0:
+        print(f"首次建立水位(send_time>{hi}); 共 {len(new)} 条历史. 之后再跑只出新消息。")
+    else:
+        print(f"新消息 {len(new)} 条:")
+        for st, cv, s, c in new[:30]:
+            print(f"  [{ex.fmt_time(st)}] 【{str(cv)[:12]}】{str(s)[:8]}: {str(c)[:40]}")
+
+
 CMDS = {"read": cmd_read, "contacts": cmd_contacts, "conversations": cmd_conversations,
-        "members": cmd_members, "search": cmd_search, "stats": cmd_stats, "todo": cmd_todo}
+        "members": cmd_members, "search": cmd_search, "stats": cmd_stats, "todo": cmd_todo,
+        "calendar": cmd_calendar, "media": cmd_media, "openfile": cmd_openfile,
+        "voice": cmd_voice, "monitor": cmd_monitor}
 
 
 def main():

@@ -65,18 +65,21 @@ key 存盘后 ②③与 monitor **无需再扫内存**。离线兜底 `find_key_
 
 语音转写：`python3 decrypt/macos/voice_transcribe.py`（缓存 SILK→whisper large-v3，已验证 6 条）。
 
-### Windows（已验证 · UTM Win11 ARM）
-前提：企业微信(WXWork)运行并登录 + 装 Python + `pip install pycryptodome`（cryptography 在 win-arm64 无 wheel，故用 pycryptodome 后端）。**无需重签**。
+### Windows（已验证 · UTM Win11 ARM · 端到端 12/12）
+前提：企业微信(WXWork)运行并登录 + 装 Python + `pip install pycryptodome`（解密后端；cryptography 在 win-arm64 无 wheel）。openfile 文档解析另需 `pip install openpyxl xlrd pypdf python-docx`。**无需重签**。
 
 ```powershell
 # ★一键: 扫key → 解密 → 跑子命令
 powershell -ExecutionPolicy Bypass -File decrypt/windows/run.ps1 <子命令>
-#   子命令(对齐 macOS): read | contacts [词] | conversations | search <词> | stats | todo
-# 或分步:
+#   子命令(对齐 macOS wecom_local):
+#   read | contacts [词] | conversations | members <会话> | search <词> | stats
+#   todo | calendar | media [--out] | openfile <名> | voice | monitor
+powershell -ExecutionPolicy Bypass -File decrypt/windows/run_test.ps1   # 端到端自测 12 项 → 报告
+# 分步:
 powershell -ExecutionPolicy Bypass -File decrypt/windows/find_key.ps1   # PS+内嵌C# 扫 WXWork.exe 内存(ReadProcessMemory)→ KEY=<hex>
-python decrypt/windows/wecom_win.py <key> <子命令>                       # 解密+解析(复用根下 wxwork_crypto/export_wxwork)
+python decrypt/windows/wecom_win.py <key> <子命令>                       # 复用根下 wxwork_crypto/export_wxwork/read_doc
 ```
-名字解析：`user.db`(uid→名/手机/邮箱) + `session.db`(会话→名)。库在 `Documents\WXWork\<id>\Data\`。待补：content_type 标签、calendar/media/voice/openfile。
+名字解析：`user.db`(uid→名/手机/邮箱) + `session.db`(会话→名)，1:1 取对方。库在 `Documents\WXWork\<id>\Data\`，明文缓存在 `…\Cache\{File,Image,Voice}`。待补：voice 转写需 faster-whisper（非 Mac 的 mlx-whisper）。
 
 ## C 实时接收 + 自主处理
 

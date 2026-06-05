@@ -69,3 +69,13 @@ Win  message.db : 46f81f090bff137c e0a5c9b8d5fcac64 1000020200402020
 **Windows 与 macOS 现已同级（核心读取/查询）。** 复用率：解密核心 100%、内容解析原语复用、仅"schema 绑定的胶水"按 Windows 表/列/库重写。
 
 待补(非核心)：content_type 标签(现 `[类型N]`)、calendar/media/voice/openfile/monitor(不同库或 key)、key 缓存(免每次重扫)。
+
+## Phase 3 完成：补齐全部二级功能 + 端到端 12/12（2026-06-05）★
+
+新增子命令(全部实测)：**calendar**(calendar_r7.db 同 message key; 标题从 rawdata 提 CJK) / **media**(明文缓存 `Cache\{File,Image}` 导出 541 文件) / **openfile**(file.db 给发件人/时间 + `Cache\File` 按原名定位 → read_doc 解析 xlsx/pdf/docx/文本) / **voice**(定位 `Cache\Voice` 的 SILK; 转写需 faster-whisper) / **monitor**(水位增量) / **members**(session.db 群成员)。
+
+依赖：`pycryptodome`(解密) + `openpyxl xlrd pypdf python-docx`(openfile)。坑：pdfplumber→pdfminer→cryptography 在 win-arm64 编译挂，改用纯 Python 的 **pypdf**(read_doc 自动回退)；lxml 有 win_arm64 wheel，python-docx 可用。
+
+端到端：`run_test.ps1`(find_key→test_e2e.py 跑 12 命令→报告写桌面)，实测 **12/12 通过**。
+
+**Windows 与 macOS 现已全功能对齐。**
