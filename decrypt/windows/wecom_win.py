@@ -249,8 +249,32 @@ def cmd_todo(key, args):
     print(f"\n{n} 条待办")
 
 
+def cmd_members(key, args):
+    if not args:
+        sys.exit("用法: members <会话名或ID>")
+    q = args[0]
+    users, convs, self_uid = load_names(key)
+    s = decrypt_db("session.db", key)
+    targets, seen = set(), {}
+    for cid, cname in s.execute("SELECT id, name FROM conversation_table"):
+        cid = str(cid)
+        nm = cname or res_conv(cid, convs, users, self_uid)
+        if q == cid or q in str(nm):
+            targets.add(cid)
+    if not targets:
+        sys.exit(f"没找到会话 '{q}'")
+    for cid in targets:
+        for uid, nick in s.execute("SELECT user_id, nick_name FROM conversation_user_table WHERE conversation_id=?", (cid,)):
+            uid = str(uid)
+            seen[uid] = users.get(uid) or nick or uid
+    s.close()
+    print(f"会话 '{q}' 成员({len(seen)}):")
+    for uid, nm in sorted(seen.items(), key=lambda x: x[1]):
+        print(f"  {nm}")
+
+
 CMDS = {"read": cmd_read, "contacts": cmd_contacts, "conversations": cmd_conversations,
-        "search": cmd_search, "stats": cmd_stats, "todo": cmd_todo}
+        "members": cmd_members, "search": cmd_search, "stats": cmd_stats, "todo": cmd_todo}
 
 
 def main():
