@@ -32,6 +32,19 @@ import export_wxwork as ex
 OUT = os.path.join(_H, "export")
 DEC = os.path.join(OUT, "dec")
 
+# Windows content_type 码 ≠ macOS —— 覆盖 export_wxwork 的渲染映射(文件15/16、文档13 与 Mac 同, 直接复用)
+ex.MEDIA = {4: "[图片]", 14: "[图片]", 29: "[图片]", 40: "[音视频通话]", 1018: "[语音通话]"}
+ex.CARD_TYPES = {10, 20, 21, 22, 105, 123, 145, 221, 516, 561, 565, 570, 573, 579, 580, 581, 582}
+ex.TYPE_LABEL = {
+    0: "文本", 2: "文本", 6: "位置", 4: "图片", 14: "图片", 29: "图片", 15: "文件", 16: "文件",
+    13: "文档链接", 40: "音视频通话", 1018: "语音通话", 1073: "会议", 1001: "会议",
+    580: "会议", 581: "会议", 582: "会议", 1011: "协作", 565: "协作", 570: "协作", 70: "待办",
+    38: "系统", 501: "系统", 503: "系统", 1022: "系统", 1002: "系统", 1006: "系统",
+    1017: "系统", 1051: "系统", 1052: "系统", 1055: "系统", 1004: "系统", 671: "系统", 132: "系统", 215: "笔记",
+    10: "卡片", 20: "卡片", 21: "卡片", 22: "卡片", 105: "卡片", 123: "卡片", 145: "卡片",
+    221: "卡片", 516: "卡片", 561: "卡片", 573: "卡片", 579: "卡片",
+}
+
 
 def read_shared(path):
     GENERIC_READ = 0x80000000
@@ -129,8 +142,7 @@ def res_conv(cid, convs, users, self_uid):
 
 
 def _content(ct, raw):
-    txt = ex.decode_text(raw) if raw else ""
-    return txt if txt else f"[类型{ct}]"
+    return ex.render(ct, raw)
 
 
 def _iter_messages(key, users, convs, self_uid):
@@ -142,7 +154,7 @@ def _iter_messages(key, users, convs, self_uid):
             "time": ex.fmt_time(st) if st else "",
             "conversation": res_conv(conv, convs, users, self_uid),
             "sender": res_sender(sender, users),
-            "type": ct,
+            "type": ex.type_name(ct),
             "content": _content(ct, content),
         }
     info.close()
@@ -284,10 +296,10 @@ def cmd_calendar(key, args):
         sys.exit("无 calendar_r7.db")
     n = 0
     for st, et, raw in c.execute("SELECT starttime, endtime, rawdata FROM calendar_main_table_v2 ORDER BY starttime DESC"):
-        runs = re.findall(r"[一-鿿][一-鿿A-Za-z0-9（）()·、，。:：\-　 ]*", raw.decode("utf-8", "replace")) if raw else []
-        runs = [x.strip() for x in runs if len(x.strip()) >= 2]
-        title = max(runs, key=len) if runs else "(无中文标题)"
-        print(f"  {ex.fmt_time(st)} ~ {ex.fmt_time(et)[11:]}  {title}")
+        strs = ex._pb_strings(bytes(raw)) if raw else []
+        cjk = [s for s in strs if re.search(r"[一-鿿]", s)]
+        title = cjk[0] if cjk else (strs[0] if strs else "(无标题)")
+        print(f"  {ex.fmt_time(st)} ~ {ex.fmt_time(et)[11:]}  {title[:50]}")
         n += 1
     c.close()
     print(f"\n{n} 个日程")
@@ -360,7 +372,8 @@ def cmd_voice(key, args):
     except ImportError:
         for f in files[:20]:
             print(f"  {os.path.getsize(f) // 1024}KB  {os.path.basename(f)}")
-        print("\n转写需: pip install pilk faster-whisper（Windows 用 faster-whisper, 非 Mac 的 mlx-whisper）")
+        print("\n转写: SILK→pilk→faster-whisper。x64 Windows 有 wheel 可直接装；")
+        print("  本 ARM VM 无 win_arm64 wheel 且无 C++ 工具链, 转写不可用(定位/导出仍可)。")
         return
     import wave
     model = WhisperModel("base", device="cpu", compute_type="int8")

@@ -79,3 +79,12 @@ Win  message.db : 46f81f090bff137c e0a5c9b8d5fcac64 1000020200402020
 端到端：`run_test.ps1`(find_key→test_e2e.py 跑 12 命令→报告写桌面)，实测 **12/12 通过**。
 
 **Windows 与 macOS 现已全功能对齐。**
+
+## Phase 3.1 收尾打磨（2026-06-05）
+
+- **content_type 标签**：Windows 码 ≠ Mac（图片 4/14/29、文件 15/16、文档 13、卡片 145/123/579…、通话 40/1018），覆盖 export_wxwork 的 MEDIA/CARD_TYPES/TYPE_LABEL 后复用其 `render()` → `[图片]/[文件]名/[卡片]标题/[文档]` 全出。
+- **calendar 标题**：改用 `ex._pb_strings(rawdata)` 取干净 protobuf 字段、挑含 CJK 的 → “开发需求会议”（无尾巴杂字）。
+- **voice 转写**：ARM VM 实测装不了——faster-whisper/ctranslate2/pilk 无 win_arm64 wheel，pywhispercpp 编译失败(无 C++ 工具链)。x64 Windows 有 wheel 可用，定位/导出不受影响。
+- 整理：删 scp 手误乱码文件、清 .DS_Store、清 VM 探路脚本。
+
+端到端复测：仍 **12/12**，报告在 VM 桌面。

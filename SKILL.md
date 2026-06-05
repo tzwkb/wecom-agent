@@ -79,7 +79,7 @@ powershell -ExecutionPolicy Bypass -File decrypt/windows/run_test.ps1   # 端到
 powershell -ExecutionPolicy Bypass -File decrypt/windows/find_key.ps1   # PS+内嵌C# 扫 WXWork.exe 内存(ReadProcessMemory)→ KEY=<hex>
 python decrypt/windows/wecom_win.py <key> <子命令>                       # 复用根下 wxwork_crypto/export_wxwork/read_doc
 ```
-名字解析：`user.db`(uid→名/手机/邮箱) + `session.db`(会话→名)，1:1 取对方。库在 `Documents\WXWork\<id>\Data\`，明文缓存在 `…\Cache\{File,Image,Voice}`。待补：voice 转写需 faster-whisper（非 Mac 的 mlx-whisper）。
+名字解析：`user.db`(uid→名/手机/邮箱) + `session.db`(会话→名)，1:1 取对方。库在 `Documents\WXWork\<id>\Data\`，明文缓存在 `…\Cache\{File,Image,Voice}`。content_type 标签按 Windows 码映射（覆盖 export_wxwork 的渲染表）。`voice` 转写：x64 Windows 装 `faster-whisper`+`pilk` 可用，**ARM 版无 win_arm64 wheel/无 C++ 工具链 → 不可用**（定位/导出仍可）。
 
 ## C 实时接收 + 自主处理
 
