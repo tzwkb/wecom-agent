@@ -8,7 +8,8 @@ import shutil
 import sqlite3
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_H = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [_H, os.path.dirname(_H)]
 from wxwork_crypto import PAGE_SZ, SQLITE_HDR, decrypt_database, load_valid_keys, table_names, verify_key
 
 HERE = os.path.dirname(os.path.abspath(__file__))

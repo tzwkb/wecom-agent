@@ -11,7 +11,8 @@ import os
 import subprocess
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_H = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [_H, os.path.dirname(_H)]
 from wxwork_crypto import PAGE_SZ, load_valid_keys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,7 +45,10 @@ def main():
         if not key_valid():
             sys.exit("扫描后仍无可用 key，检查企微是否登录")
     run("decrypt_wxwork.py")
-    run("export_wxwork.py")
+    if subprocess.run([PY, os.path.join(os.path.dirname(HERE), "export_wxwork.py"),
+                       "--db", os.path.join(HERE, "decrypted", "Messages1", "Info.db"),
+                       "--out", os.path.join(HERE, "export")]).returncode != 0:
+        sys.exit("export_wxwork 失败")
     print("\n✅ 完成。导出在 decrypt/export/messages.csv|json；日常增量用 monitor.py")
 
 

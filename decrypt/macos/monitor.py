@@ -13,7 +13,8 @@ import sqlite3
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_H = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [_H, os.path.dirname(_H)]
 from wxwork_crypto import PAGE_SZ, decrypt_database, load_valid_keys
 import export_wxwork as ex
 

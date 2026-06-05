@@ -21,7 +21,8 @@ import sys
 from collections import Counter, defaultdict
 from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_H = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [_H, os.path.dirname(_H)]
 import export_wxwork as ex
 
 HERE = os.path.dirname(os.path.abspath(__file__))

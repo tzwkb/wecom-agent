@@ -17,21 +17,29 @@ import os
 import sqlite3
 import struct
 
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
 PAGE_SZ = 4096
 SQLITE_HDR = b"SQLite format 3\x00"
 WXSQLITE3_SALT = b"sAlT"
 
 
-def _aes_cbc_dec(key, iv, data):
-    d = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
-    return d.update(data) + d.finalize()
+try:                                  # AES 后端: cryptography(macOS)优先, 退 pycryptodome(Windows ARM64 有 wheel)
+    from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
+    def _aes_cbc_dec(key, iv, data):
+        d = Cipher(algorithms.AES(key), modes.CBC(iv)).decryptor()
+        return d.update(data) + d.finalize()
 
-def _aes_cbc_enc(key, iv, data):
-    e = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
-    return e.update(data) + e.finalize()
+    def _aes_cbc_enc(key, iv, data):
+        e = Cipher(algorithms.AES(key), modes.CBC(iv)).encryptor()
+        return e.update(data) + e.finalize()
+except ImportError:
+    from Crypto.Cipher import AES      # pycryptodome
+
+    def _aes_cbc_dec(key, iv, data):
+        return AES.new(key, AES.MODE_CBC, iv).decrypt(data)
+
+    def _aes_cbc_enc(key, iv, data):
+        return AES.new(key, AES.MODE_CBC, iv).encrypt(data)
 
 
 def _modmult(a, b, c, m, s):

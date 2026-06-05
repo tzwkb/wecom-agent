@@ -8,13 +8,13 @@ __pycache__/
 decrypt/内存提取输出_raw.txt
 docs/解密消息样本.txt
 
-# 解密产物与密钥(私密数据,绝不进 git)
-decrypt/wxwork_keys.json
-decrypt/decrypted/
-decrypt/export/
-decrypt/validate.dylib
+# 解密产物与密钥(私密数据,绝不进 git) —— 覆盖 macOS/Windows 各 OS 子目录
+**/wxwork_keys.json
+decrypt/**/decrypted/
+decrypt/**/export/
+decrypt/windows/recon_report*.json
+decrypt/**/validate.dylib
 *.csv
 jobs/
 .token_cache.json
 .venv/
-decrypt/export/voice_transcripts.json

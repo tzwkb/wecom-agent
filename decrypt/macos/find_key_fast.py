@@ -12,7 +12,8 @@ import subprocess
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+_H = os.path.dirname(os.path.abspath(__file__))
+sys.path[:0] = [_H, os.path.dirname(_H)]
 from wxwork_crypto import PAGE_SZ, generate_initial_vector, verify_key
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +24,7 @@ TARGETS = [("messages", "Messages1/Info.db"),
            ("contact", "Contact/Contact.db")]
 OUT = os.path.join(HERE, "wxwork_keys.json")
 LIB = os.path.join(HERE, "validate.dylib")
+SRC = os.path.join(HERE, "validate.c")
 
 
 def find_pid():
@@ -53,8 +55,14 @@ def main():
     cb0 = b"".join(bytes(pg[8:16]) + bytes(pg[24:32]) for pg in page1s)
     ivflat = iv * ntgt
 
-    if not os.path.exists(LIB):
-        sys.exit(f"缺 {LIB}, 先编译 validate.c")
+    if not os.path.exists(LIB):                       # 首次/分发后: 缺 dylib 则现编 validate.c
+        if not os.path.exists(SRC):
+            sys.exit(f"缺 {LIB} 且无源码 {SRC}")
+        print("validate.dylib 不存在, 自动编译 validate.c …", file=sys.stderr)
+        cc = subprocess.run(["clang", "-O3", "-dynamiclib", "-o", LIB, SRC],
+                            capture_output=True, text=True)
+        if cc.returncode or not os.path.exists(LIB):
+            sys.exit(f"编译 validate.c 失败 (需 Xcode 命令行工具):\n{cc.stderr}")
     lib = ctypes.CDLL(LIB)
     lib.scan_buf.restype = ctypes.c_long
     lib.scan_buf.argtypes = [ctypes.c_char_p, ctypes.c_long, ctypes.c_int,

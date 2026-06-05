@@ -17,9 +17,7 @@ import sys
 from datetime import datetime
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from wecom_paths import decrypted
-DEFAULT_DB = decrypted("Messages1", "Info.db")
+DEFAULT_DB = os.path.join(HERE, "decrypted", "Messages1", "Info.db")
 OUTDIR = os.path.join(HERE, "export")
 _SHADOW = ("_content", "_segdir", "_segments", "_docsize", "_idx", "_data", "_config", "_stat")
 
