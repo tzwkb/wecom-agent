@@ -1,5 +1,5 @@
 # 企业微信 Windows 版 · 端到端测试入口
-# find_key 抓 key → test_e2e.py 跑全部命令 → 报告写到桌面
+# find_key 抓 key → run_test_impl.py 跑全部命令 → 报告写到桌面
 # 用法: powershell -ExecutionPolicy Bypass -File run_test.ps1
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
@@ -16,4 +16,4 @@ $key = $m.Groups[1].Value
 Write-Host "[2/2] key=$key → 端到端测试 ..." -ForegroundColor Cyan
 $env:PYTHONUTF8 = "1"
 $stamp = Get-Date -Format "yyyy-MM-dd HH:mm"
-python -X utf8 "$here\test_e2e.py" $key "$stamp"
+python -X utf8 "$here\run_test_impl.py" $key "$stamp"
