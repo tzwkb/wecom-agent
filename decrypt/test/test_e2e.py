@@ -14,7 +14,7 @@ import glob
 import platform
 import subprocess
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # test/ 上一级 = decrypt/
 IS_MAC = platform.system() == "Darwin"
 FULL = "--full" in sys.argv
 PY = sys.executable
