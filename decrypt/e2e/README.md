@@ -10,9 +10,9 @@
 
 ## 跑法
 ```bash
-python3 decrypt/test/test_e2e.py            # 端到端 9 项
-python3 decrypt/test/test_e2e.py --full     # + media 导出
-python3 decrypt/test/check_consistency.py   # 一致性校验
+python3 decrypt/e2e/test_e2e.py            # 端到端 9 项
+python3 decrypt/e2e/test_e2e.py --full     # + media 导出
+python3 decrypt/e2e/check_consistency.py   # 一致性校验
 ```
 退出码 0=全过 / 1=有失败。
 
