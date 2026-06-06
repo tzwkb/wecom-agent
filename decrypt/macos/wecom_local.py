@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """企业微信**本地数据**查询 —— 基于已解密的 53 库 + 明文缓存, 全本地、无需 API/网络/模型。
 
-子命令:
+子命令(均支持 --json 输出结构化):
   contacts [关键词]      通讯录(姓名/部门/职位/手机/邮箱), 可按词过滤
   conversations          会话列表(名称/消息数/最后时间)
   members <会话名或ID>   某会话的参与者
@@ -10,10 +10,11 @@
   todo                   待办(内容/状态/创建者/提醒)
   calendar               日程
   media [--out 目录]     导出明文缓存的图片+文件(按原名)
-  openfile <名/关键词>   找文档(谁/何时发)→定位本地本体→文本类解析; 图片型/扫描PDF 输出🖼️VISUAL路径交多模态Read
-前提: 先跑 read_wecom.py 解密。用法: wecom_local.py <子命令> [参数]
+  openfile <名/关键词>   找文档(谁/何时发)→定位本体→文本解析; 图片型/扫描PDF 输出🖼️VISUAL路径交多模态Read
+前提: 先跑 read_wecom.py 解密。用法: wecom_local.py <子命令> [参数] [--json]
 """
 import glob
+import json
 import os
 import shutil
 import sqlite3
@@ -41,23 +42,25 @@ def _conn(path):
     return c
 
 
-def cmd_contacts(args):
+def cmd_contacts(args, js=False):
     kw = args[0] if args else ""
     c = _conn(SESS)
-    n = 0
+    people = []
     for r in c.execute("SELECT name, fullpath, job, mobile, email, alias FROM USER ORDER BY name"):
         blob = " ".join(str(r[k] or "") for k in ("name", "fullpath", "job", "mobile", "email", "alias"))
         if kw and kw not in blob:
             continue
-        fields = [str(r["name"] or ""), str(r["job"] or ""), str(r["mobile"] or ""),
-                  str(r["email"] or ""), str(r["fullpath"] or "")]
-        print("  " + " | ".join(x for x in fields if x))
-        n += 1
+        people.append({k: (r[k] or "") for k in ("name", "fullpath", "job", "mobile", "email", "alias")})
     c.close()
-    print(f"\n{n} 人" + (f' (含"{kw}")' if kw else ""))
+    if js:
+        return {"keyword": kw, "count": len(people), "contacts": people}
+    for p in people:
+        fields = [p["name"], p["job"], p["mobile"], p["email"], p["fullpath"]]
+        print("  " + " | ".join(x for x in fields if x))
+    print(f"\n{len(people)} 人" + (f' (含"{kw}")' if kw else ""))
 
 
-def cmd_conversations(args):
+def cmd_conversations(args, js=False):
     info = _conn(INFO)
     convn = ex._load_conv_names(info)
     counts, last = Counter(), defaultdict(int)
@@ -65,12 +68,16 @@ def cmd_conversations(args):
         counts[cid] += 1
         last[cid] = max(last[cid], st or 0)
     info.close()
-    for cid, n in sorted(counts.items(), key=lambda x: last[x[0]], reverse=True):
+    ordered = sorted(counts.items(), key=lambda x: last[x[0]], reverse=True)
+    if js:
+        return {"count": len(counts), "conversations": [
+            {"name": convn.get(cid, cid), "messages": n, "last_time": ex.fmt_time(last[cid])} for cid, n in ordered]}
+    for cid, n in ordered:
         print(f"  {ex.fmt_time(last[cid])}  {n:>5}条  {convn.get(cid, cid)}")
     print(f"\n{len(counts)} 个会话")
 
 
-def cmd_members(args):
+def cmd_members(args, js=False):
     if not args:
         sys.exit("用法: members <会话名或ID>")
     q = args[0]
@@ -85,12 +92,14 @@ def cmd_members(args):
         for (sid,) in info.execute("SELECT sender_id FROM MESSAGE WHERE conv_id=?", (cid,)):
             seen[ex.resolve_sender(sid, users)] += 1
     info.close()
+    if js:
+        return {"query": q, "members": [{"name": name, "messages": n} for name, n in seen.most_common()]}
     print(f"会话 '{q}' 参与者(按发言数):")
     for name, n in seen.most_common():
         print(f"  {n:>4}  {name}")
 
 
-def cmd_search(args):
+def cmd_search(args, js=False):
     if not args:
         sys.exit("用法: search <关键词>")
     kw = args[0]
@@ -98,26 +107,29 @@ def cmd_search(args):
     users = ex._load_user_names(INFO)
     convn = ex._load_conv_names(info)
     kwb = kw.encode("utf-8")
-    hits = 0
+    found = []
     for r in info.execute("SELECT conv_id, sender_id, content_type, send_time, content "
                           "FROM MESSAGE ORDER BY send_time"):
         raw = r["content"]
         sender = ex.resolve_sender(r["sender_id"], users)
         conv = convn.get(r["conv_id"], r["conv_id"])
-        # 预过滤: 命中发送者/会话/类型名, 或 kw 字节在原始 content 里; 否则跳过昂贵的 render
         if not (kw in str(conv) or kw in str(sender) or kw in ex.type_name(r["content_type"])
                 or (isinstance(raw, (bytes, bytearray)) and kwb in bytes(raw))
                 or (isinstance(raw, str) and kw in raw)):
             continue
         content = ex.render(r["content_type"], raw)
         if kw in str(content) or kw in str(sender) or kw in str(conv):
-            print(f"  [{ex.fmt_time(r['send_time'])}] {str(conv)[:14]} | {str(sender)[:8]} : {str(content)[:60]}")
-            hits += 1
+            found.append({"time": ex.fmt_time(r["send_time"]), "conv": str(conv),
+                          "sender": str(sender), "content": str(content)})
     info.close()
-    print(f"\n命中 {hits} 条")
+    if js:
+        return {"keyword": kw, "count": len(found), "messages": found}
+    for m in found:
+        print(f"  [{m['time']}] {m['conv'][:14]} | {m['sender'][:8]} : {m['content'][:60]}")
+    print(f"\n命中 {len(found)} 条")
 
 
-def cmd_stats(args):
+def cmd_stats(args, js=False):
     info = _conn(INFO)
     users = ex._load_user_names(INFO)
     convn = ex._load_conv_names(info)
@@ -133,6 +145,10 @@ def cmd_stats(args):
             by_h[dt.hour] += 1
             by_d[dt.strftime("%Y-%m-%d")] += 1
     info.close()
+    if js:
+        return {"total": total, "by_sender": by_s.most_common(10), "by_conv": by_c.most_common(10),
+                "by_type": by_t.most_common(12), "by_hour": {h: by_h.get(h, 0) for h in range(24)},
+                "by_day": sorted(by_d.items())}
     print(f"总消息 {total} 条")
     print("\n发言最多:")
     for s, n in by_s.most_common(10):
@@ -153,57 +169,70 @@ def cmd_stats(args):
         print(f"  {d}  {n}")
 
 
-def cmd_todo(args):
+def cmd_todo(args, js=False):
     p = os.path.join(DEC, "Todo", "Todo.db")
     users = ex._load_user_names(INFO)
     c = _conn(p)
-    n = 0
+    items = []
     for r in c.execute("SELECT content, completed, creator, remindtime FROM TODOTABLE3 WHERE deleted=0 "
                        "ORDER BY remindtime DESC"):
-        st = "✓完成" if r["completed"] else "○待办"
-        who = users.get(r["creator"], str(r["creator"]))
-        rt = ex.fmt_time(r["remindtime"]) if r["remindtime"] else ""
-        print(f"  {st}  {str(r['content'] or '')[:54]:<54} {who} {rt}")
-        n += 1
+        items.append({"content": str(r["content"] or ""), "completed": bool(r["completed"]),
+                      "creator": users.get(r["creator"], str(r["creator"])),
+                      "remind": ex.fmt_time(r["remindtime"]) if r["remindtime"] else ""})
     c.close()
-    print(f"\n{n} 条待办")
+    if js:
+        return {"count": len(items), "todos": items}
+    for it in items:
+        st = "✓完成" if it["completed"] else "○待办"
+        print(f"  {st}  {it['content'][:54]:<54} {it['creator']} {it['remind']}")
+    print(f"\n{len(items)} 条待办")
 
 
-def cmd_calendar(args):
+def cmd_calendar(args, js=False):
     p = os.path.join(DEC, "Calendar", "Calendar_tmp19.db")
     c = _conn(p)
-    n = 0
+    events = []
     for r in c.execute("SELECT starttime, endtime, blob FROM calevent2 ORDER BY starttime DESC"):
         title = ex.decode_text(r["blob"]) if r["blob"] else ""
         title = title.split("\n")[0][:50] if title else "(无标题)"
-        print(f"  {ex.fmt_time(r['starttime'])} ~ {ex.fmt_time(r['endtime'])[11:]}  {title}")
-        n += 1
+        events.append({"start": ex.fmt_time(r["starttime"]), "end": ex.fmt_time(r["endtime"]), "title": title})
     c.close()
-    print(f"\n{n} 个日程")
+    if js:
+        return {"count": len(events), "events": events}
+    for e in events:
+        print(f"  {e['start']} ~ {e['end'][11:]}  {e['title']}")
+    print(f"\n{len(events)} 个日程")
 
 
-def cmd_media(args):
+def cmd_media(args, js=False):
     out = args[args.index("--out") + 1] if "--out" in args else os.path.join(HERE, "export", "media")
     total = 0
+    per = {}
     for sub in ("Images", "Files"):
         src = os.path.join(CACHES, sub)
         if not os.path.isdir(src):
             continue
         dst_dir = os.path.join(out, sub)
         os.makedirs(dst_dir, exist_ok=True)
+        n = 0
         for f in glob.glob(os.path.join(src, "**", "*"), recursive=True):
             if not os.path.isfile(f) or os.path.basename(f) == ".DS_Store":
                 continue
             try:
                 shutil.copy2(f, os.path.join(dst_dir, os.path.basename(f)))
                 total += 1
+                n += 1
             except OSError:
                 pass
-        print(f"  {sub}: 导出到 {dst_dir}")
+        per[sub] = n
+        if not js:
+            print(f"  {sub}: 导出到 {dst_dir}")
+    if js:
+        return {"out": out, "total": total, **per}
     print(f"\n共导出 {total} 个媒体文件 → {out}")
 
 
-def cmd_openfile(args):
+def cmd_openfile(args, js=False):
     if not args:
         sys.exit("用法: openfile <文件名或关键词> [--full]")
     import read_doc
@@ -212,7 +241,7 @@ def cmd_openfile(args):
     info = _conn(INFO)
     users = ex._load_user_names(INFO)
     convn = ex._load_conv_names(info)
-    hits = {}  # 文件名 -> (时间, 发送者, 会话)
+    hits = {}
     for r in info.execute("SELECT conv_id, sender_id, send_time, content "
                           "FROM MESSAGE WHERE content_type IN (15, 16) ORDER BY send_time"):
         name = ex._filename(r["content"])
@@ -221,32 +250,48 @@ def cmd_openfile(args):
                           convn.get(r["conv_id"], r["conv_id"]))
     info.close()
     if not hits:
+        if js:
+            return {"keyword": kw, "count": 0, "files": []}
         sys.exit(f"聊天里没找到含「{kw}」的文档（openfile 只查文件类消息；内联图片请用 media 导出后多模态看）")
 
-    cache = {}  # 真实文件名 -> [本地路径...]（同名可能多份）
+    cache = {}
     for f in glob.glob(os.path.join(CACHES, "Files", "**", "*"), recursive=True):
         if os.path.isfile(f) and os.path.basename(f) != ".DS_Store":
             cache.setdefault(os.path.basename(f), []).append(f)
 
-    print(f"匹配 {len(hits)} 个文档（含「{kw}」）:\n")
+    files = []
+    if not js:
+        print(f"匹配 {len(hits)} 个文档（含「{kw}」）:\n")
     for name, (t, s, c) in sorted(hits.items(), key=lambda x: x[1][0]):
-        print(f"📄 《{name}》  {s} {t} @ {c}")
         paths = cache.get(name, [])
+        entry = {"name": name, "sender": s, "time": t, "conv": str(c), "local": None, "content": None, "visual": None}
         if not paths:
-            print("   ✗ 本地未缓存（从没下载/打开过 → 需联网下载本体）\n")
+            entry["content"] = "(本地未缓存)"
+            if not js:
+                print(f"📄 《{name}》  {s} {t} @ {c}\n   ✗ 本地未缓存（从没下载/打开过 → 需联网下载本体）\n")
+            files.append(entry)
             continue
-        path = max(paths, key=os.path.getsize)        # 同名多份取最大(最可能是完整版)
-        if len(paths) > 1:
-            print(f"   ⚠️ 本地有 {len(paths)} 份同名缓存, 取最大一份")
+        path = max(paths, key=os.path.getsize)
+        entry["local"] = path
         body = read_doc.read_file(path, limit=20000 if full else 1500)
-        if body.startswith(read_doc.VISUAL_MARK):     # 图片型/扫描 → 交多模态
-            print(f"   {body}")
+        if body.startswith(read_doc.VISUAL_MARK):
+            entry["visual"] = body
         else:
-            print(f"   本地: {path}")
-            print("   ── 内容 ──")
-            for line in body.splitlines():
-                print("   " + line)
-        print()
+            entry["content"] = body
+        files.append(entry)
+        if not js:
+            print(f"📄 《{name}》  {s} {t} @ {c}")
+            if len(paths) > 1:
+                print(f"   ⚠️ 本地有 {len(paths)} 份同名缓存, 取最大一份")
+            if entry["visual"]:
+                print(f"   {body}")
+            else:
+                print(f"   本地: {path}\n   ── 内容 ──")
+                for line in body.splitlines():
+                    print("   " + line)
+            print()
+    if js:
+        return {"keyword": kw, "count": len(files), "files": files}
 
 
 CMDS = {"contacts": cmd_contacts, "conversations": cmd_conversations, "members": cmd_members,
@@ -259,7 +304,11 @@ def main():
         print(__doc__)
         print("子命令:", ", ".join(CMDS))
         sys.exit(1)
-    CMDS[sys.argv[1]](sys.argv[2:])
+    js = "--json" in sys.argv
+    args = [a for a in sys.argv[2:] if a != "--json"]
+    r = CMDS[sys.argv[1]](args, js)
+    if js:
+        print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
 
 
 if __name__ == "__main__":
