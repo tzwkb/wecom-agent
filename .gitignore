@@ -18,3 +18,4 @@ decrypt/**/validate.dylib
 jobs/
 .token_cache.json
 .venv/
+decrypt/legacy/
