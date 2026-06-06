@@ -306,7 +306,12 @@ def main():
         sys.exit(1)
     js = "--json" in sys.argv
     args = [a for a in sys.argv[2:] if a != "--json"]
-    r = CMDS[sys.argv[1]](args, js)
+    try:
+        r = CMDS[sys.argv[1]](args, js)
+    except sqlite3.OperationalError as e:
+        if "no such table" in str(e):
+            sys.exit("解密 OK，但核心表缺失 → 数据未同步(可能是新登录)。先打开企业微信浏览消息，等同步后重试。")
+        raise
     if js:
         print(json.dumps(r, ensure_ascii=False, indent=2, default=str))
 

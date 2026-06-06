@@ -79,7 +79,7 @@ L += [
     "## 名字解析",
     "`user.db.user_table`(uid→名/手机/邮箱) + `session.db.conversation_table`(会话→名)；1:1 取对方。",
 ]
-desktop = os.path.join(r"C:\Users\零九三号虚拟机", "Desktop")
+desktop = os.path.join(os.path.expanduser("~"), "Desktop")
 out = os.path.join(desktop, "wecom_windows_端到端测试报告.md")
 open(out, "w", encoding="utf-8").write("\n".join(L))
 
