@@ -65,6 +65,12 @@ key 存盘后 ②③与 monitor **无需再扫内存**。离线兜底 `find_key_
 
 语音转写：`python3 decrypt/macos/voice_transcribe.py`（缓存 SILK→whisper large-v3，已验证 6 条）。
 
+#### MCP（可选薄门面，与 wechat 对齐）
+
+逻辑核心是命令行 `wecom_local.py`（`--json` 拿结构化）；`server.py` 的 MCP 工具只是逐个转发到它，不含逻辑。**不要 MCP 也行**——直接跑 `wecom_local.py <子命令>`。
+
+注册：`bash setup.sh`（装 `mcp` + `claude mcp add wecom`）→ 重启 Claude Code。工具：`wecom_contacts/conversations/members/search/stats/todo/calendar/media/openfile`（参数同子命令）。前提：先 `read_wecom.py` 解密，`decrypt/macos/decrypted/` 就位。
+
 ### Windows（已验证 · UTM Win11 ARM · 端到端 12/12）
 前提：企业微信(WXWork)运行并登录 + 装 Python + `pip install pycryptodome`（解密后端；cryptography 在 win-arm64 无 wheel）。openfile 文档解析另需 `pip install openpyxl xlrd pypdf python-docx`。**无需重签**。
 
