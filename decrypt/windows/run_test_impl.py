@@ -17,7 +17,7 @@ stamp = sys.argv[2] if len(sys.argv) > 2 else ""
 
 TESTS = [
     ("read", [], ["条", "messages.json"]),
-    ("contacts", ["余"], ["张三"]),
+    ("contacts", ["张"], ["张三"]),
     ("conversations", [], ["个会话"]),
     ("members", ["测试项目组"], ["成员"]),
     ("search", ["解耦"], ["命中"]),

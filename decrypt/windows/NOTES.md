@@ -64,7 +64,7 @@ Win  message.db : 46f81f090bff137c e0a5c9b8d5fcac64 1000020200402020
 - `run.ps1` —— 一键入口：`find_key.ps1` 抓 key → `wecom_win` 跑子命令（对齐 macOS `read_wecom.py`）。
 - `find_key.ps1` 修复：`$ErrorActionPreference` Stop→Continue（Stop 下递归搜库被 access-denied 终止，才是 NO_MESSAGE_DB 真因；glob 本身没问题）。
 
-**实测全过（VM, 从零跑）**：`run.ps1` 自动抓 key(7580…) → `read` 14208 条带真名（`【张三】李四…`）；`contacts 余`→`张三|Sam|手机`；`stats` 发言/会话排行全真名（李四4531/王五/测试项目组…）；`search/conversations/todo` 均 OK。
+**实测全过（VM, 从零跑）**：`run.ps1` 自动抓 key → `read` 数千条带真名（`【张三】李四…`）；`contacts 张`→`张三|Sam|手机`；`stats` 发言/会话排行（张三/李四/某项目组…）；`search/conversations/todo` 均 OK。
 
 **Windows 与 macOS 现已同级（核心读取/查询）。** 复用率：解密核心 100%、内容解析原语复用、仅"schema 绑定的胶水"按 Windows 表/列/库重写。
 
