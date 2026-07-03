@@ -1,11 +1,13 @@
 # WeCom Agent
 
-[English](README.md) | 中文
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-Codex-blue.svg)](SKILL.md)
+[![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
 
+[English](README.md) | 中文
 
 **Agent Skill** — 企业微信本地读取与官方 API 操作助手，支持聊天记录解密、通讯录/会话搜索、发消息、日程会议和在线文档流程。
 
-**Agent Skill** — WeCom assistant for local chat decryption/search plus official API operations for messaging, contacts, calendar meetings, and online docs.
 
 让本地 agent **读取、分析、(配置后)操作**企业微信。macOS 已验证。
 
