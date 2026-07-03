@@ -8,17 +8,18 @@ English | [中文](README_ZH.md)
 
 ## Overview
 
- WeCom local-reading and official API operation Agent Skill for chat decryption, contact/session search, messaging, calendar meetings, and online documents.
+ WeCom local-reading Agent Skill plus WecomTeam official CLI/Bot operation layer for chat decryption, contact/session search, messaging, documents, sheets, schedules, meetings, and todos.
 
 ## Key Capabilities
 
 - Reads and analyzes local WeCom chat data.
-- Uses self-built app APIs for messaging, contacts, calendar, and document operations.
+- Uses WecomTeam `wecom-cli/wecom-unified` for active WeCom operations.
 - Keeps a local-agent workflow controlled directly by the user.
+- Keeps local decryption as the default path for historical chat reading.
 
 ## Usage
 
- Configure local decryption, WeCom app parameters, and available APIs according to README/SKILL.md.
+ Configure local decryption according to README/SKILL.md. For active operations, install and initialize WecomTeam `wecom-cli`.
 
 ## Status
 
@@ -26,47 +27,47 @@ English | [中文](README_ZH.md)
 
 ## Notes
 
- Official API operations depend on trusted domains, IP settings, and application permissions.
+ The self-built app HTTP API path is no longer the main plan. Historical chat reading stays local; WecomTeam CLI/Bot handles active operations.
 
 ## Command and Configuration Reference
 
 The following code blocks keep commands, paths, filenames, and configuration keys literal; explanatory comments are translated for the English README.
 
 ```bash
-python3 decrypt/read_wecom.py               # one-click: scan key → decrypt → export to decrypt/export/messages.csv|json
-python3 decrypt/wecom_local.py stats        # statistics profile (messages, conversation ranking, hourly/daily breakdown)
-python3 decrypt/wecom_local.py contacts <name>  # search contacts (name, department, title, phone, email)
-python3 decrypt/wecom_local.py search <query>  # full-text message search
-python3 decrypt/wecom_local.py conversations|members <conversation>|todo|calendar|media
-python3 decrypt/monitor.py --poll 30        # poll for new messages incrementally
-python3 decrypt/voice_transcribe.py         # transcribe voice messages (requires pilk + mlx-whisper)
+PY=/opt/homebrew/bin/python3                      # or the Python printed by setup.sh
+$PY decrypt/macos/read_wecom.py                   # one-click: scan key → decrypt → export
+$PY decrypt/macos/wecom_local.py stats            # statistics profile
+$PY decrypt/macos/wecom_local.py contacts <name>  # search local contacts
+$PY decrypt/macos/wecom_local.py search <query>   # full-text local message search
+$PY decrypt/macos/wecom_local.py conversations|members <conversation>|todo|calendar|media
+$PY decrypt/macos/monitor.py --poll 30            # poll for new local messages incrementally
+$PY decrypt/macos/voice_transcribe.py             # transcribe voice messages (requires pilk + mlx-whisper)
 ```
 
 ```bash
-cp config.example.json config.json   # fill credentials (gitignored)
-python3 selfcheck.py                  # integration self-check (read-only first)
-python3 wecom.py message text '{"touser":"x","content":"hi"}'
-python3 wecom.py doc edit '{"docid":"..","requests":[..]}'
+npm install -g @wecom/cli
+wecom-cli auth show --auth-status
+wecom-cli init
+wecom-cli todo search_todo_userid --json '{"keyword":"name"}'
+wecom-cli todo get_todo_list --json '{"follower_id":"USERID"}'
+wecom-cli doc create_doc --json '{"doc_name":"Title","doc_type":3}'
+wecom-cli doc edit_doc_content --json '{"docid":"DOCID","content_type":1,"content":"# Title\nBody"}'
 ```
 
+Message reading defaults to the local decryption path. `wecom-cli msg get_message` is not a normal fallback; use it only when the user explicitly asks for the official online API and local reading is unavailable.
+
+Current enterprise test result: `wecom-cli init` authorizes successfully; `todo search_todo_userid/get_todo_list` works; `contact/msg/schedule/meeting` return enterprise-level unsupported-permission errors; document writes require explicit user confirmation before testing.
+
 ```
-wecom.py                          Track A API CLI (contact/message/doc/schedule/meeting/call)
-selfcheck.py                      Track A credential integration self-check
-recv_server.py / agent_worker.py  real-time receive path (archived)
+legacy/self-built-app/            legacy self-built app API/callback experiments
 decrypt/                          Track B local decryption and reading (core)
   wxwork_crypto.py                wxSQLite3 AES-128-CBC decryption core (+ self-test)
-  wecom_paths.py                  automatic profile path detection
-  find_key_fast.py + validate.c   live-process memory scan for the 16B key (C accelerated)
-  find_key_offline.py             offline fallback key search
-  decrypt_wxwork.py               full database decryption
   export_wxwork.py                structured export (real names, types, cards, files, docs)
-  monitor.py                      incremental monitor
-  wecom_local.py                  local queries (contacts, conversations, search, stats, todo, calendar, media)
-  voice_transcribe.py             cached voice SILK→Whisper transcription
-  read_wecom.py                   one-click wrapper
-  NOTES.md                        decryption investigation timeline
-  legacy/                         deprecated explorations (old carve/frida/injection approaches)
-docs/                             decryption notes / self-built app setup / IT config request / development plan
+  media_export.py                 media export helper without same-name overwrite
+  macos/                          macOS key scan, decrypt, query, monitor, voice entry points
+  windows/                        Windows key scan and local-reading entry points
+  e2e/                            end-to-end checks
+docs/                             decryption notes / development plan / legacy self-built app notes
 ```
 
 ## Detailed Technical Notes

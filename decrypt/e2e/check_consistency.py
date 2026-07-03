@@ -13,10 +13,11 @@ import os
 import sys
 
 H = os.path.expanduser("~")
-SK_WX = f"{H}/.claude/skills/wechat-decrypt"
-LG_WX = f"{H}/Desktop/Langlobal/wechat-decrypt"
-SK_WC = f"{H}/.claude/skills/wecom-agent"
-LG_WC = f"{H}/Desktop/Langlobal/wecom-agent"
+SKILLS_ROOT = os.environ.get("SKILLS_ROOT", f"{H}/.codex/skills")
+SK_WX = os.environ.get("WECHAT_SKILL_DIR", os.path.join(SKILLS_ROOT, "wechat-decrypt"))
+LG_WX = os.environ.get("WECHAT_LANGLOBAL_DIR", f"{H}/Desktop/Langlobal/wechat-decrypt")
+SK_WC = os.environ.get("WECOM_SKILL_DIR", os.path.join(SKILLS_ROOT, "wecom-agent"))
+LG_WC = os.environ.get("WECOM_LANGLOBAL_DIR", f"{H}/Desktop/Langlobal/wecom-agent")
 
 SRC_EXT = (".py", ".md", ".sh", ".ps1", ".js", ".toml")
 SKIP_DIR = (".git", "__pycache__", ".pytest_cache", "decrypted", "export", ".venv")

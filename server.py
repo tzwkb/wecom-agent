@@ -1,7 +1,7 @@
 """WeCom MCP Server —— 可选薄门面。逻辑在 decrypt/<platform>/wecom_local.py(命令行核心),这里只把工具调用转发过去。
 
 entry 范式与 wechat 对齐:命令行 wecom_local.py 为唯一核心(通用/可测/CI/分发);MCP 是可选层,每工具内部转发。
-不要 MCP 也行——直接 `python3 decrypt/macos/wecom_local.py <子命令> [--json]`。
+不要 MCP 也行——直接 `$PY decrypt/macos/wecom_local.py <子命令> [--json]`。
 前提:先跑 read_wecom.py 解密(macOS)/ extract+decrypt(Windows)。
 """
 import contextlib

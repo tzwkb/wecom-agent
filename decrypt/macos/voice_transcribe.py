@@ -3,7 +3,7 @@
 
 来源: Caches/Voices/**/*.dat (SILK v3, 首字节 0x02 是微信前缀)。
 流程: 剥 0x02 → pilk SILK→PCM → ffmpeg PCM→wav → mlx-whisper(large-v3) 转写。
-输出: decrypt/export/voice_transcripts.json (含 file/时间/时长/text)。
+输出: decrypt/macos/export/voice_transcripts.json (含 file/时间/时长/text)。
 依赖: pip install pilk mlx-whisper; ffmpeg; Apple Silicon(mlx)。
 覆盖: 仅本地缓存(实测约 6/231 条)；未缓存的需联网 CDN，本脚本不做。
 用法: voice_transcribe.py [--model REPO] [--lang zh]

@@ -28,6 +28,7 @@ _H = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [_H, os.path.dirname(_H)]
 from wxwork_crypto import decrypt_database
 import export_wxwork as ex
+from media_export import copy_unique
 
 OUT = os.path.join(_H, "export")
 DEC = os.path.join(OUT, "dec")
@@ -306,7 +307,6 @@ def cmd_calendar(key, args):
 
 
 def cmd_media(key, args):
-    import shutil
     out = args[args.index("--out") + 1] if "--out" in args else os.path.join(OUT, "media")
     total = 0
     for sub in ("File", "Image"):
@@ -318,7 +318,7 @@ def cmd_media(key, args):
         for f in glob.glob(os.path.join(root, "**", "*"), recursive=True):
             if os.path.isfile(f):
                 try:
-                    shutil.copy2(f, os.path.join(dst, os.path.basename(f)))
+                    copy_unique(f, dst)
                     total += 1
                 except OSError:
                     pass

@@ -1,118 +1,128 @@
 ---
 name: wecom-agent
-description: 企业微信全能 agent——本地解密读取聊天记录、自建应用API发消息/查通讯录/读写在线文档/日程会议、实时接收消息并自主处理(自动回复/写文档)。触发词：企业微信/企微/wecom，读消息/导出聊天记录、发消息/通知、查通讯录/找人、建文档/读文档/编辑文档、日程/会议、实时接收/自动回复。
+description: Use when 处理企业微信/企微/wecom 任务，包括本地聊天记录解密读取、离线搜索导出、媒体/文档定位，以及通过 WecomTeam 官方 CLI/Bot 能力发消息、查通讯录、读写文档、表格、日程、会议、待办。
 allowed-tools: Bash
 ---
 
-# wecom-agent — 企业微信全能 agent
+# wecom-agent
 
-| 线 | 能力 | 入口 | 依赖 |
-|---|---|---|---|
-| **A 主动操作** | 发消息/通讯录/文档读写/日程/会议 | `wecom.py` | CorpID+Secret+AgentId + 可信IP |
-| **B 本地读取** | 解密导出聊天记录(会话/发送者/时间/正文) | `decrypt/` | 企微登录 + adhoc 重签(去 hardened runtime) |
-| **C 实时接收+自主处理** | 收消息→分析→自动回复/写文档 | `recv_server.py`+`agent_worker.py` | A 的凭证 + 接收Token/AESKey + 公网URL |
+本 skill 的主线是 **本地解密读取 + WecomTeam 官方操作层**。
 
-配置见 `README.md` 与 `docs/自建应用配置教程.md`。凭证写 `config.json`(已 gitignore)。
+| 线 | 默认方案 | 能力边界 |
+|---|---|---|
+| **B 本地读取** | 本仓库 `decrypt/` | 历史聊天、离线全文搜索、会话/成员/统计、媒体导出、聊天文件定位。默认优先使用。 |
+| **A 主动操作** | WecomTeam `wecom-cli` / `wecom-unified` | 发消息、查通讯录、文档/表格/智能表格、日程、会议、待办。 |
+| **实时互动** | WecomTeam Bot SDK（后续接入） | WebSocket 收消息、流式回复、主动推送、文件下载解密。 |
 
-## A 主动操作（官方 API）
+旧的自建应用 HTTP API 方案不再是主线；不要为普通 A 线任务要求用户配置 CorpID/Secret/AgentId、可信域名或可信 IP。
+
+## 决策规则
+
+| 用户需求 | 默认调用 |
+|---|---|
+| 读/导出/搜索历史聊天、统计会话、找本地聊天文件 | B 本地读取 |
+| 读任何聊天消息/历史/近期增量 | B 本地读取 |
+| 用户明确要求官方在线接口且本地读取不可用 | 可应急使用 `wecom-cli msg get_message` |
+| 发消息、通知某人/群 | `wecom-cli msg ...`；若返回“当前企业暂不支持授权机器人「消息」使用权限”，说明该企业不可用 |
+| 查人、找 userid | 优先 B 本地通讯录；A 线可用时用 `wecom-cli contact ...` |
+| 读/建/改企业微信文档、表格、智能表格 | `wecom-cli doc ...`；写操作先确认 |
+| 查/建/改/取消日程 | `wecom-cli schedule ...`；若企业不支持则说明权限边界 |
+| 查/建/取消会议 | `wecom-cli meeting ...`；若企业不支持则说明权限边界 |
+| 查/建/更新/删除待办 | `wecom-cli todo ...`；写操作先确认 |
+| 自动回复/流式回复 | Bot SDK；未接入前说明暂未落地 |
+
+**写操作执行前先向用户确认对象、内容和影响范围。**
+
+## A 主动操作（WecomTeam CLI）
+
+首次使用先检查并初始化：
 
 ```bash
-python3 wecom.py <category> <method> '<json参数>'   # 输出JSON, errcode:0 成功
+wecom-cli --version || npm install -g @wecom/cli
+wecom-cli auth show --auth-status
+wecom-cli init
 ```
 
-| category | method | 参数 | 作用 |
-|---|---|---|---|
-| `contact` | `departments` | 无 | 部门列表(名称+ID) |
-| `contact` | `users` | `{"department_id":1}` | 部门成员(userid+姓名) |
-| `contact` | `get`/`search`/`list_id` | `{"userid"/"keyword":..}` | 成员详情/按名找人/成员ID列表 |
-| `message` | `text`/`markdown`/`news` | `{"touser":"x","content":".."}` | 发消息(`touser`缺省@all,多人`|`分隔) |
-| `doc` | `create`/`get`/`edit`/`del`/`rename`/`sheet_get`/`sheet_edit` | 透传 body | 在线文档/表格 读写+编辑(edit=batch_update) |
-| `schedule`/`meeting` | `add`/`create`/`list`.. | 透传 body | 日程/会议 |
-| `call` | 逃生舱 | `{"path":"/cgi-bin/..","body":{}}` | 任意官方接口 |
+通用格式：
 
-**写操作（发消息/删日程/改文档）执行前先向用户确认内容。**
+```bash
+wecom-cli <category> <method> '<json参数>'
+```
+
+常用入口：
+
+| category | 例子 |
+|---|---|
+| `doc` | `wecom-cli doc create_doc --json '{"doc_name":"标题","doc_type":3}'` |
+| `doc` | `wecom-cli doc edit_doc_content --json '{"docid":"DOCID","content_type":1,"content":"# 标题\\n正文"}'` |
+| `todo` | `wecom-cli todo search_todo_userid --json '{"keyword":"姓名"}'` |
+| `todo` | `wecom-cli todo get_todo_list --json '{"follower_id":"USERID"}'` |
+| `contact` / `msg` / `schedule` / `meeting` | 当前企业实测返回“不支持授权机器人对应权限”；遇到该错误时不要继续重试，直接说明权限边界 |
+
+遇到具体参数不确定时，优先查 `wecom-cli <category> --help` 或 WecomTeam `wecom-unified` references。
 
 ## B 本地读取聊天记录
 
-> **按系统分流**：macOS → `decrypt/macos/`，Windows → `decrypt/windows/`；解密核心 `wxwork_crypto.py` + 解析 `export_wxwork.py` 在 `decrypt/` 根下**两端共用**（同一套 wxSQLite3 AES，已两端实证）。
+按系统分流：macOS → `decrypt/macos/`，Windows → `decrypt/windows/`。解密核心 `decrypt/wxwork_crypto.py` 与解析 `decrypt/export_wxwork.py` 两端共用。
 
-### macOS（已验证）
-前提：企业微信运行并登录 + 已对企微 adhoc 重签（见 `docs/解密思路.md`、[[wechat_codesign_pitfall]]）。
+### macOS
+
+前提：企业微信运行并登录；首次抓 key 需要已对企微 adhoc 重签，见 `docs/解密思路.md`。
 
 ```bash
-python3 decrypt/macos/read_wecom.py        # ★一键: 扫key有效则跳过 → 解密 → 导出
-python3 decrypt/macos/find_key_fast.py     # 单独抓 key(活进程内存扫,只读不注入); 存 wxwork_keys.json
-python3 decrypt/macos/decrypt_wxwork.py    # 全库解密 → decrypt/macos/decrypted/
-python3 decrypt/macos/monitor.py --once    # 增量(--poll N 持续监控)
+PY=${WECOM_PYTHON:-/opt/homebrew/bin/python3}
+$PY decrypt/macos/read_wecom.py
+$PY decrypt/macos/find_key_fast.py
+$PY decrypt/macos/decrypt_wxwork.py
+$PY decrypt/macos/monitor.py --once
 ```
 
-解析已覆盖：发送者真名(Session.db USER)、会话名、消息类型——文本 / 图片 / `[语音]` / `[文件]名` / `[文档]标题+链接` / `[卡片]标题+链接` / 系统 / 会议。
-可选语音转写：`voice_transcribe.py`（本地缓存 SILK→whisper，需 pilk+mlx-whisper，仅覆盖已播放的）。
-key 存盘后 ②③与 monitor **无需再扫内存**。离线兜底 `find_key_offline.py`。方案见 `docs/解密思路.md`。产物私密、已 gitignore。
+本地查询：
 
-**本地数据查询/分析**（解密后，全本地无网络）：`python3 decrypt/macos/wecom_local.py <子命令>`
+```bash
+$PY decrypt/macos/wecom_local.py <contacts|conversations|members|search|stats|todo|calendar|media|openfile>
+```
 
 | 子命令 | 作用 |
 |---|---|
-| `contacts [词]` | 通讯录 138 人（姓名/部门/职位/手机/邮箱），可按词查 |
-| `conversations` | 会话列表（名称/消息数/最后时间） |
-| `members <会话>` | 群成员（按发言数） |
+| `contacts [词]` | 本地通讯录搜索 |
+| `conversations` | 会话列表 |
+| `members <会话>` | 群成员与发言数 |
 | `search <词>` | 全文搜索消息 |
-| `stats` | 统计画像（发言排行/会话排行/类型/按小时/按天） |
+| `stats` | 发言/会话/类型/时间统计 |
 | `todo` / `calendar` | 本地待办 / 日程 |
-| `media [--out]` | 导出明文缓存图片+文件（161图+119文件） |
-| `openfile <名/词>` | 聊天里找文档→定位本地本体→**文本类**解析内容（txt/csv/md/xlsx/docx/文本PDF，需 openpyxl/pdfplumber/python-docx）；**图片型/扫描PDF**输出 `🖼️VISUAL <路径>`→你接着用 **Read 多模态直接看**。内联图片(type29)无法按消息定位，用 `media` 导出后多模态浏览 |
+| `media [--out]` | 导出明文缓存图片和文件 |
+| `openfile <名/词>` | 从聊天记录定位并解析本地文件 |
 
-语音转写：`python3 decrypt/macos/voice_transcribe.py`（缓存 SILK→whisper large-v3，已验证 6 条）。
-
-#### MCP（可选薄门面，与 wechat 对齐）
-
-逻辑核心是命令行 `wecom_local.py`（`--json` 拿结构化）；`server.py` 的 MCP 工具只是逐个转发到它，不含逻辑。**不要 MCP 也行**——直接跑 `wecom_local.py <子命令>`。
-
-注册：`bash setup.sh`（装 `mcp` + `claude mcp add wecom`）→ 重启 Claude Code。工具：`wecom_contacts/conversations/members/search/stats/todo/calendar/media/openfile`（参数同子命令）。前提：先 `read_wecom.py` 解密，`decrypt/macos/decrypted/` 就位。
-
-### Windows（已验证 · UTM Win11 ARM · 端到端 12/12）
-前提：企业微信(WXWork)运行并登录 + 装 Python + `pip install pycryptodome`（解密后端；cryptography 在 win-arm64 无 wheel）。openfile 文档解析另需 `pip install openpyxl xlrd pypdf python-docx`。**无需重签**。
-
-```powershell
-# ★一键: 扫key → 解密 → 跑子命令
-powershell -ExecutionPolicy Bypass -File decrypt/windows/run.ps1 <子命令>
-#   子命令(对齐 macOS wecom_local):
-#   read | contacts [词] | conversations | members <会话> | search <词> | stats
-#   todo | calendar | media [--out] | openfile <名> | voice | monitor
-powershell -ExecutionPolicy Bypass -File decrypt/windows/run_test.ps1   # 端到端自测 12 项 → 报告
-# 分步:
-powershell -ExecutionPolicy Bypass -File decrypt/windows/find_key.ps1   # PS+内嵌C# 扫 WXWork.exe 内存(ReadProcessMemory)→ KEY=<hex>
-python decrypt/windows/wecom_win.py <key> <子命令>                       # 复用根下 wxwork_crypto/export_wxwork/read_doc
-```
-名字解析：`user.db`(uid→名/手机/邮箱) + `session.db`(会话→名)，1:1 取对方。库在 `Documents\WXWork\<id>\Data\`，明文缓存在 `…\Cache\{File,Image,Voice}`。content_type 标签按 Windows 码映射（覆盖 export_wxwork 的渲染表）。`voice` 转写：x64 Windows 装 `faster-whisper`+`pilk` 可用，**ARM 版无 win_arm64 wheel/无 C++ 工具链 → 不可用**（定位/导出仍可）。
-
-## C 实时接收 + 自主处理
+可选语音转写：
 
 ```bash
-# 1. 按 docs/自建应用配置教程.md 配「接收消息」(URL/Token/EncodingAESKey)
-# 2. 公网暴露: cloudflared tunnel --url http://localhost:8000
-python3 recv_server.py               # 验签+AES解密+快速ACK+入队 jobs/inbox.jsonl
-python3 agent_worker.py              # 读队列→决策→经wecom.py回复/写文档
+$PY decrypt/macos/voice_transcribe.py
 ```
 
-`config.json` 配 `llm_base_url/llm_key/llm_model`(OpenAI 兼容) → LLM 自主决策；`"auto_reply":false` 仅记录不发（人工把关）。
+### Windows
 
-## Agent 触发规则
+前提：企业微信运行并登录，安装 Python 与 `pycryptodome`。
 
-| 用户说 | 调用 |
-|---|---|
-| "导出/读我的企微聊天" | B 线三步 |
-| "发企微给X""通知X" | `message text` |
-| "查通讯录""找叫X的人" | `contact users/search` |
-| "建/读企微文档" | `doc create/get` |
-| "约会议""建日程" | `meeting create`/`schedule add` |
-| "让agent自动回复企微" | C 线(recv_server + agent_worker) |
-| 封装没有的接口 | `call` |
+```powershell
+powershell -ExecutionPolicy Bypass -File decrypt/windows/run.ps1 <子命令>
+powershell -ExecutionPolicy Bypass -File decrypt/windows/run_test.ps1
+powershell -ExecutionPolicy Bypass -File decrypt/windows/find_key.ps1
+python decrypt/windows/wecom_win.py <key> <子命令>
+```
+
+## MCP（可选）
+
+本地读取 MCP 只是 `wecom_local.py --json` 的薄门面。不要为了本地查询强制走 MCP；直接跑 CLI 更透明。
+
+```bash
+bash setup.sh
+```
+
+工具：`wecom_contacts/conversations/members/search/stats/todo/calendar/media/openfile`。
 
 ## 状态
 
-- **B 本地读取**：✅ 已实跑验证（5458 条结构化消息）。
-- **A 主动操作**：代码就绪、端点按官方文档校正；待真实凭证联调（`gettoken` 已实测可达）。
-- **C 实时接收+自主处理**：回调加解密、决策闭环均自测通过；待凭证+公网URL联调。
-- 通讯录读取受企微隐私策略限制（需可见范围+权限，否则 `60011`/`60020`）。
+- **B 本地读取**：已实跑验证，覆盖本地历史聊天、会话、发送者、文本/图片/语音/文件/文档/卡片等解析。
+- **A 主动操作**：改为复用 WecomTeam `wecom-cli/wecom-unified`。当前企业实测授权成功；`todo search_todo_userid/get_todo_list` 可用；`doc` 命令可加载但写入需确认后测试；`contact/msg/schedule/meeting` 返回企业不支持授权机器人权限。
+- **实时互动**：后续接 WecomTeam Bot SDK；旧回调实验代码在 `legacy/self-built-app/`。

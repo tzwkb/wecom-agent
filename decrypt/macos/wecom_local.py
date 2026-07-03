@@ -16,7 +16,6 @@
 import glob
 import json
 import os
-import shutil
 import sqlite3
 import sys
 from collections import Counter, defaultdict
@@ -25,6 +24,7 @@ from datetime import datetime
 _H = os.path.dirname(os.path.abspath(__file__))
 sys.path[:0] = [_H, os.path.dirname(_H)]
 import export_wxwork as ex
+from media_export import copy_unique
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 from wecom_paths import caches, decrypted
@@ -219,7 +219,7 @@ def cmd_media(args, js=False):
             if not os.path.isfile(f) or os.path.basename(f) == ".DS_Store":
                 continue
             try:
-                shutil.copy2(f, os.path.join(dst_dir, os.path.basename(f)))
+                copy_unique(f, dst_dir)
                 total += 1
                 n += 1
             except OSError:

@@ -6,7 +6,7 @@
 (自主回复/写文档见 agent_worker.py)。5 秒内必须响应, 故重活不在此处做。
 
 配置: 同目录 config.json 的 corpid / recv_token / recv_aeskey。
-公网暴露: cloudflared tunnel --url http://localhost:8000 (详见 docs/自建应用配置教程.md)。
+公网暴露: cloudflared tunnel --url http://localhost:8000 (详见 ../../docs/legacy/自建应用配置教程.md)。
 自测(不需真凭证): python3 recv_server.py --selftest
 运行:        python3 recv_server.py [--port 8000] [--path /wecom]
 """
@@ -146,7 +146,7 @@ def make_handler(crypt, path):
 def _load_cfg():
     p = os.path.join(HERE, "config.json")
     if not os.path.exists(p):
-        sys.exit("缺 config.json(填 corpid/recv_token/recv_aeskey), 见 docs/自建应用配置教程.md")
+        sys.exit("缺 config.json(填 corpid/recv_token/recv_aeskey), 见 ../../docs/legacy/自建应用配置教程.md")
     c = json.load(open(p))
     for k in ("corpid", "recv_token", "recv_aeskey"):
         if not c.get(k):

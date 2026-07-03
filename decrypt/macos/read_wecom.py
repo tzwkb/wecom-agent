@@ -49,7 +49,7 @@ def main():
                        "--db", os.path.join(HERE, "decrypted", "Messages1", "Info.db"),
                        "--out", os.path.join(HERE, "export")]).returncode != 0:
         sys.exit("export_wxwork 失败")
-    print("\n✅ 完成。导出在 decrypt/export/messages.csv|json；日常增量用 monitor.py")
+    print("\n✅ 完成。导出在 decrypt/macos/export/messages.csv|json；日常增量用 monitor.py")
 
 
 if __name__ == "__main__":

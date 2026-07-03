@@ -41,5 +41,5 @@ def caches():
 
 
 def decrypted(*parts):
-    """解密输出树 decrypt/decrypted/ 下的路径。"""
+    """解密输出树 decrypt/macos/decrypted/ 下的路径。"""
     return os.path.join(_HERE, "decrypted", *parts)

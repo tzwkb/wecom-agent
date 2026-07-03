@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""用 wxwork_keys.json 的 16B raw key 解密企业微信(macOS)各加密库 → decrypt/decrypted/。
+"""用 wxwork_keys.json 的 16B raw key 解密企业微信(macOS)各加密库 → decrypt/macos/decrypted/。
 自动按页1匹配可用 key(不同库可能不同 key); 明文库直接拷贝; 末尾打印消息库 schema。
 用法: decrypt_wxwork.py [--profile DIR] [--out DIR]
 """

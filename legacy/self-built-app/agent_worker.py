@@ -7,7 +7,7 @@
 
 决策: config.json 配 llm_base_url/llm_key/llm_model(OpenAI 兼容, 如 VectorEngine) → LLM 自主决策;
       未配则用内置规则(回显 + /help + /doc)。
-安全: 默认 auto_reply=true; 设 config.json "auto_reply": false 则只记录不发(人工把关)。
+安全: 默认 auto_reply=false; 设 config.json "auto_reply": true 才会自动回复。
 用法: agent_worker.py [--dry-run] [--once] [--poll 2]
 """
 import argparse
@@ -155,7 +155,7 @@ def main():
     a = ap.parse_args()
     cfg = load_cfg()
     mode = "LLM" if (cfg.get("llm_key") and cfg.get("llm_base_url")) else "内置规则"
-    print(f"agent_worker 启动: 决策={mode}, auto_reply={cfg.get('auto_reply', True)}, dry_run={a.dry_run}")
+    print(f"agent_worker 启动: 决策={mode}, auto_reply={cfg.get('auto_reply', False)}, dry_run={a.dry_run}")
     if a.once:
         print(f"处理 {process_new(cfg, a.dry_run)} 条"); return
     while True:
