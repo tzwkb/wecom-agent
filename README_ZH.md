@@ -1,6 +1,6 @@
 # WeCom Agent
 
-中文 | [English](README.md)
+[English](README.md) | 中文
 
 
 **Agent Skill** — 企业微信本地读取与官方 API 操作助手，支持聊天记录解密、通讯录/会话搜索、发消息、日程会议和在线文档流程。
