@@ -20,10 +20,6 @@ English | [中文](README_ZH.md)
 
  Configure local decryption, WeCom app parameters, and available APIs according to README/SKILL.md.
 
-## Status
-
- This repository is maintained or used according to the current README notes.
-
 ## Notes
 
  Official API operations depend on trusted domains, IP settings, and application permissions.
@@ -68,7 +64,3 @@ decrypt/                          Track B local decryption and reading (core)
   legacy/                         deprecated explorations (old carve/frida/injection approaches)
 docs/                             decryption notes / self-built app setup / IT config request / development plan
 ```
-
-## Detailed Technical Notes
-
-This README keeps the English version of the core documentation. Code blocks, paths, commands, and file-layout examples are kept literal so they can be copied and checked against the repository.
