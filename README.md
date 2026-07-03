@@ -1,5 +1,44 @@
 # WeCom Agent
 
+<!-- bilingual-readme:start -->
+
+## 双语说明 / Bilingual Documentation
+
+> 本节提供整篇 README 的中英双语维护说明；下方保留原始详细说明、命令、路径和配置示例。
+> This section provides bilingual maintenance notes for the full README; the original detailed notes, commands, paths, and configuration examples are preserved below.
+
+### 中文
+
+**概览**：企业微信本地读取与官方 API 操作 Agent Skill，支持聊天记录解密、通讯录/会话搜索、发消息、日程会议和在线文档流程。
+
+**主要能力**：
+- 读取和分析本地企业微信聊天数据。
+- 对接自建应用 API 执行消息、通讯录、日程和文档操作。
+- 保留本地 agent 直接指挥的工作方式。
+
+**使用方式**：按 README/SKILL.md 配置本地解密、企业微信应用参数和可用 API。
+
+**状态**：该仓库仍按当前 README 的说明维护或使用。
+
+**注意事项**：官方 API 操作依赖企业可信域名、IP 和应用权限。
+
+### English
+
+**Overview**: WeCom local-reading and official API operation Agent Skill for chat decryption, contact/session search, messaging, calendar meetings, and online documents.
+
+**Key capabilities**:
+- Reads and analyzes local WeCom chat data.
+- Uses self-built app APIs for messaging, contacts, calendar, and document operations.
+- Keeps a local-agent workflow controlled directly by the user.
+
+**Usage**: Configure local decryption, WeCom app parameters, and available APIs according to README/SKILL.md.
+
+**Status**: This repository is maintained or used according to the current README notes.
+
+**Notes**: Official API operations depend on trusted domains, IP settings, and application permissions.
+
+<!-- bilingual-readme:end -->
+
 **Agent Skill** — 企业微信本地读取与官方 API 操作助手，支持聊天记录解密、通讯录/会话搜索、发消息、日程会议和在线文档流程。
 
 **Agent Skill** — WeCom assistant for local chat decryption/search plus official API operations for messaging, contacts, calendar meetings, and online docs.
