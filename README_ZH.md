@@ -6,77 +6,75 @@
 
 [English](README.md) | 中文
 
-**Agent Skill** — 企业微信本地读取与官方 API 操作助手，支持聊天记录解密、通讯录/会话搜索、发消息、日程会议和在线文档流程。
-
-
-让本地 agent **读取、分析、(配置后)操作**企业微信。macOS 已验证。
+**Agent Skill** — 企业微信本地解密读取 + WecomTeam 官方 CLI/Bot 操作助手，支持历史聊天读取、通讯录/会话搜索、媒体/文档定位、待办和在线文档/表格流程。
 
 ## 能力
 
 | 线 | 能力 | 状态 |
 |---|---|---|
-| **B 本地读取** | 解密导出聊天记录、增量监控、通讯录/会话/全文搜索/统计画像、语音转写、媒体导出 | ✅ 已可用 |
-| **A 主动操作** | 发消息、查通讯录、读写编辑在线文档、日程/会议（官方 API） | ⏸️ 代码就绪，待企业可信域名+IP（见 `docs/IT配置请求.md`） |
+| **B 本地读取** | 解密导出聊天记录、增量监控、通讯录/会话/全文搜索/统计画像、语音转写、媒体导出 | 已可用 |
+| **A 在线操作** | 通过 WecomTeam `wecom-cli` 操作文档、在线表格、智能表格、待办等在线 API | 分模块可用，受企业权限限制 |
+| **实时互动** | WecomTeam Bot SDK WebSocket 收消息、回复、推送 | 后续接入 |
 
-> 实时接收回调（C）已弃：本地 agent 由用户直接指挥，无需绕企微回调。代码 `recv_server.py`/`agent_worker.py` 封存。
+旧自建应用 HTTP API 不再是主线。历史聊天读取默认走本地解密；在线写操作默认复用 WecomTeam `wecom-cli`。
 
-## 快速开始（B 本地读取）
+## 快速开始：本地读取
 
-前提：企业微信已登录 + 已对企微做 adhoc 重签（去 hardened runtime，见 `docs/解密思路.md`）。
-
-```bash
-python3 decrypt/read_wecom.py               # 一键: 扫key→解密→导出 → decrypt/export/messages.csv|json
-python3 decrypt/wecom_local.py stats        # 统计画像(发言/会话排行、按小时/天)
-python3 decrypt/wecom_local.py contacts 张  # 查通讯录(姓名/部门/职位/手机/邮箱)
-python3 decrypt/wecom_local.py search 报价  # 全文搜索消息
-python3 decrypt/wecom_local.py conversations|members <会话>|todo|calendar|media
-python3 decrypt/monitor.py --poll 30        # 增量盯新消息
-python3 decrypt/voice_transcribe.py         # 语音转文字(需 pilk + mlx-whisper)
-```
-
-key 首次需企微在跑、登录态（活进程内存扫 16B key，只读不注入）；之后存盘复用，无需再扫。
-
-## A 主动操作（官方 API）
-
-需管理员建自建应用拿 `CorpID/Secret/AgentId`（`docs/自建应用配置教程.md`）。企微对国内主体强制要求**可信域名(备案)+可信IP**，须 IT 配合（`docs/IT配置请求.md`）。
+前提：企业微信已登录；首次抓 key 需要按 `docs/解密思路.md` 处理 macOS 签名限制。
 
 ```bash
-cp config.example.json config.json   # 填凭证(已 gitignore)
-python3 selfcheck.py                  # 联调自检(只读先行)
-python3 wecom.py message text '{"touser":"x","content":"hi"}'
-python3 wecom.py doc edit '{"docid":"..","requests":[..]}'
+PY=/opt/homebrew/bin/python3
+$PY decrypt/macos/read_wecom.py
+$PY decrypt/macos/wecom_local.py stats
+$PY decrypt/macos/wecom_local.py contacts 张
+$PY decrypt/macos/wecom_local.py search 报价
+$PY decrypt/macos/wecom_local.py conversations|members <会话>|todo|calendar|media
+$PY decrypt/macos/monitor.py --poll 30
+$PY decrypt/macos/voice_transcribe.py
 ```
-命令速查见 `SKILL.md`。
+
+## 在线文档和表格
+
+```bash
+npm install -g @wecom/cli
+wecom-cli init
+wecom-cli auth show --auth-status
+
+$PY -m online.selfcheck
+```
+
+已实现封装：
+
+- `online.docs`：创建普通文档、Markdown 覆写正文、创建智能文档。
+- `online.local_docs`：读取本地已缓存/已下载的文档，作为 `get_doc_content` 缺失时的 fallback。
+- `online.sheets`：创建在线表格、读取表结构、新增/删除子表、追加行、更新区域。
+- `online.smartsheets`：创建智能表格、读取子表/字段、管理子表/字段、在已知 `record_id` 时增删改记录。
+
+当前 `wecom-cli 0.1.9` 未暴露 `get_doc_content`、`sheet_get_data`、`smartsheet_get_records`，所以线上最新版内容读取仍标为不支持；本地缓存 fallback 只能读取本机已下载/已打开过的文件。
+
+## MCP
+
+```bash
+bash setup.sh
+```
+
+MCP 保留本地读取工具：`wecom_contacts/conversations/members/search/stats/todo/calendar/media/openfile`，并新增 `wecom_local_doc_read_path`、`wecom_local_doc_search` 读取本地缓存/下载文档。
+
+新增在线工具：`wecom_doc_create`、`wecom_doc_write_markdown`、`wecom_sheet_create`、`wecom_sheet_info`、`wecom_sheet_append_row`、`wecom_sheet_update_range`、`wecom_smartsheet_create`、`wecom_smartsheet_fields`、`wecom_smartsheet_add_records` 等。所有线上写操作必须传 `confirmed=True`。
 
 ## 结构
 
-```
-wecom.py                          A线 API CLI（contact/message/doc/schedule/meeting/call）
-selfcheck.py                      A线 凭证联调自检
-recv_server.py / agent_worker.py  实时接收(封存)
-decrypt/                          B线 本地解密读取(核心)
-  wxwork_crypto.py                wxSQLite3 AES-128-CBC 解密核心(+自测)
-  wecom_paths.py                  profile 路径自动探测
-  find_key_fast.py + validate.c   活进程内存扫 16B key(C 加速)
-  find_key_offline.py             离线兜底找 key
-  decrypt_wxwork.py               全库解密
-  export_wxwork.py                结构化导出(真名/类型/卡片/文件/文档)
-  monitor.py                      增量监控
-  wecom_local.py                  本地查询(通讯录/会话/搜索/统计/待办/日程/媒体)
-  voice_transcribe.py             缓存语音 SILK→whisper 转写
-  read_wecom.py                   一键封装
-  NOTES.md                        解密调查时间线
-  legacy/                         废弃探索(旧 carve/frida/注入方案)
-docs/                             解密思路 / 自建应用配置教程 / IT配置请求 / 开发计划
+```text
+decrypt/                          B 线本地解密读取核心
+online/                           A 线 WecomTeam CLI 薄封装
+server.py                         MCP 薄门面
+legacy/self-built-app/            旧自建应用实验代码
+docs/                             设计、状态和开发文档
+tests/                            单元测试
 ```
 
 ## 隐私与安全
 
-- **仅读本人设备本人账号。** 解密产物（`decrypt/decrypted/`、`export/`、`jobs/`）、凭证 `config.json`、密钥 `wxwork_keys.json` 均 `.gitignore`，不入库。
-- B 线需对企微 adhoc 重签（破坏性；日常使用建议重装恢复原签名）。
-- 路径自动探测，不硬编码用户名/profile。
-- 依赖：B 核心仅 `cryptography`；`find_key_fast` 首次自动用 `clang` 编译 `validate.c`（需 Xcode 命令行工具）。文档解析(`openfile`)可选 `openpyxl`/`pdfplumber`/`python-docx`/`xlrd`；语音 `pilk`+`mlx-whisper`（Apple Silicon）。缺可选库自动降级提示。
-
-## 原理
-
-消息库 = wxSQLite3 AES-128-CBC（非 SQLCipher）。key 仅在登录后进程内存，读出后离线解密。详见 [`docs/解密思路.md`](docs/解密思路.md)。
+- 仅读本人设备本人账号。
+- 解密产物、密钥、凭证和运行时数据均 `.gitignore`，不入库。
+- 任何线上写操作必须先确认对象、内容和影响范围。

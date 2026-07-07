@@ -6,61 +6,71 @@
 
 English | [中文](README_ZH.md)
 
-## Overview
+WeCom local-decrypt reading plus WecomTeam CLI/Bot operation layer for local chat search, media/file discovery, todos, and online documents/sheets.
 
- WeCom local-reading and official API operation Agent Skill for chat decryption, contact/session search, messaging, calendar meetings, and online documents.
+## Capabilities
 
-## Key Capabilities
+| Track | Capability | Status |
+|---|---|---|
+| B local reading | Decrypt/export local chats, contacts, conversations, full-text search, stats, media export, local file discovery | Available |
+| A online operations | WecomTeam `wecom-cli` wrapper for documents, online sheets, smart sheets, todos, and other supported online APIs | Partially available, permission-dependent |
+| Realtime interaction | WecomTeam Bot SDK WebSocket receive/reply path | Planned |
 
-- Reads and analyzes local WeCom chat data.
-- Uses self-built app APIs for messaging, contacts, calendar, and document operations.
-- Keeps a local-agent workflow controlled directly by the user.
+The legacy self-built app HTTP API is no longer the main path. Historical chat reading defaults to local decrypt; online write operations go through WecomTeam `wecom-cli`.
 
-## Usage
-
- Configure local decryption, WeCom app parameters, and available APIs according to README/SKILL.md.
-
-## Notes
-
- Official API operations depend on trusted domains, IP settings, and application permissions.
-
-## Command and Configuration Reference
-
-The following code blocks keep commands, paths, filenames, and configuration keys literal; explanatory comments are translated for the English README.
+## Local Reading
 
 ```bash
-python3 decrypt/read_wecom.py               # one-click: scan key → decrypt → export to decrypt/export/messages.csv|json
-python3 decrypt/wecom_local.py stats        # statistics profile (messages, conversation ranking, hourly/daily breakdown)
-python3 decrypt/wecom_local.py contacts <name>  # search contacts (name, department, title, phone, email)
-python3 decrypt/wecom_local.py search <query>  # full-text message search
-python3 decrypt/wecom_local.py conversations|members <conversation>|todo|calendar|media
-python3 decrypt/monitor.py --poll 30        # poll for new messages incrementally
-python3 decrypt/voice_transcribe.py         # transcribe voice messages (requires pilk + mlx-whisper)
+PY=/opt/homebrew/bin/python3
+$PY decrypt/macos/read_wecom.py
+$PY decrypt/macos/wecom_local.py stats
+$PY decrypt/macos/wecom_local.py contacts <name>
+$PY decrypt/macos/wecom_local.py search <query>
+$PY decrypt/macos/wecom_local.py conversations|members <conversation>|todo|calendar|media
+$PY decrypt/macos/monitor.py --poll 30
+$PY decrypt/macos/voice_transcribe.py
 ```
+
+## Online Documents And Sheets
 
 ```bash
-cp config.example.json config.json   # fill credentials (gitignored)
-python3 selfcheck.py                  # integration self-check (read-only first)
-python3 wecom.py message text '{"touser":"x","content":"hi"}'
-python3 wecom.py doc edit '{"docid":"..","requests":[..]}'
+npm install -g @wecom/cli
+wecom-cli init
+wecom-cli auth show --auth-status
+
+$PY -m online.selfcheck
 ```
 
+Implemented wrappers:
+
+- `online.docs`: create normal documents, overwrite Markdown content, create smart pages.
+- `online.local_docs`: read locally cached/downloaded documents as a fallback when online content APIs are unavailable.
+- `online.sheets`: create online sheets, read sheet metadata, add/delete subsheets, append rows, update ranges.
+- `online.smartsheets`: create smart sheets, read sheets/fields, manage sheets/fields, add/update/delete records when record IDs are known.
+
+Current `wecom-cli 0.1.9` does not expose `get_doc_content`, `sheet_get_data`, or `smartsheet_get_records`; latest online content reads are therefore marked unsupported by `online.selfcheck`. Local cache fallback can only read files already downloaded or opened on this device.
+
+## MCP
+
+```bash
+bash setup.sh
 ```
-wecom.py                          Track A API CLI (contact/message/doc/schedule/meeting/call)
-selfcheck.py                      Track A credential integration self-check
-recv_server.py / agent_worker.py  real-time receive path (archived)
-decrypt/                          Track B local decryption and reading (core)
-  wxwork_crypto.py                wxSQLite3 AES-128-CBC decryption core (+ self-test)
-  wecom_paths.py                  automatic profile path detection
-  find_key_fast.py + validate.c   live-process memory scan for the 16B key (C accelerated)
-  find_key_offline.py             offline fallback key search
-  decrypt_wxwork.py               full database decryption
-  export_wxwork.py                structured export (real names, types, cards, files, docs)
-  monitor.py                      incremental monitor
-  wecom_local.py                  local queries (contacts, conversations, search, stats, todo, calendar, media)
-  voice_transcribe.py             cached voice SILK→Whisper transcription
-  read_wecom.py                   one-click wrapper
-  NOTES.md                        decryption investigation timeline
-  legacy/                         deprecated explorations (old carve/frida/injection approaches)
-docs/                             decryption notes / self-built app setup / IT config request / development plan
+
+MCP keeps local tools (`wecom_contacts`, `wecom_search`, `wecom_openfile`, etc.), adds local document fallback tools (`wecom_local_doc_read_path`, `wecom_local_doc_search`), and adds online tools such as `wecom_doc_create`, `wecom_doc_write_markdown`, `wecom_sheet_append_row`, and `wecom_smartsheet_add_records`. Online write tools require `confirmed=True`.
+
+## Structure
+
+```text
+decrypt/                          Track B local decrypt/read core
+online/                           Track A WecomTeam CLI wrappers
+server.py                         MCP thin facade
+legacy/self-built-app/            legacy self-built app experiments
+docs/                             design notes, status, and development docs
+tests/                            unit tests
 ```
+
+## Safety
+
+- Read only the user's own device/account.
+- Decryption outputs, keys, credentials, and runtime data stay gitignored.
+- Every online write operation must confirm target, content, and impact before execution.

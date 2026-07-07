@@ -60,7 +60,8 @@ def _clip(t, limit):
 
 
 def _text(path, limit):
-    data = open(path, "rb").read()
+    with open(path, "rb") as f:
+        data = f.read()
     if b"\x00" in data[:8192]:                       # 含 NUL → 八成是二进制误命名
         return f"[疑似二进制(含 NUL 字节), {len(data)}B — 不当文本读]"
     t = data.decode("utf-8", errors="replace")
