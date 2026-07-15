@@ -24,8 +24,8 @@
     "adapter": "markdown",
     "config": "docs/sourcey.config.ts",
     "local_command": "cd docs && sourcey build -o ../.sourcey/runx-docs --quiet",
-    "deployment_action": "sourcey/build-docs@v1",
-    "deployment_version": "3.6.5",
+    "deployment_method": "prebuilt Sourcey site published from the repository gh-pages branch",
+    "deployment_branch": "gh-pages",
     "pages": [
       "introduction",
       "quickstart",
@@ -113,7 +113,7 @@
     {
       "id": "publication_authority",
       "result": "project-owned and adopted",
-      "evidence": "The deployment workflow and documentation link are committed in the target maintainer's tzwkb/wecom-agent repository."
+      "evidence": "The Sourcey site is published from the target repository's gh-pages branch, and the documentation link is committed in both project READMEs."
     }
   ]
 }
