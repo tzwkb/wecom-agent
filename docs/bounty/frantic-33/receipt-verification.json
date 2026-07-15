@@ -1,0 +1,15 @@
+{
+  "receipt_dir": "/Users/spellbook/Documents/Codex/2026-07-10/new-chat/work/frantic_sourcey/wecom-agent/docs/bounty/frantic-33/receipts",
+  "signature_mode": "local-development",
+  "trees": [
+    {
+      "root_receipt_id": "sha256:9c6f92e140c4f6546e5133bb6bfa7bfbd70c9ec087050ee539dced298af9fba9",
+      "receipt_count": 12,
+      "parent_missing": null,
+      "valid": true,
+      "findings": []
+    }
+  ],
+  "unreadable_files": [],
+  "valid": true
+}

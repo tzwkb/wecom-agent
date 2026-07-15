@@ -1,0 +1,119 @@
+{
+  "schema": "frantic.sourcey.evidence.v1",
+  "summary": "WeCom Agent now has a ten-page Sourcey documentation site grounded in its maintained MIT-licensed Python repository, with 38 public APIs documented, a sealed runx Sourcey receipt, project-owned GitHub Pages deployment, and repository README adoption.",
+  "public_url": "https://tzwkb.github.io/wecom-agent/",
+  "repository": {
+    "url": "https://github.com/tzwkb/wecom-agent",
+    "source_commit": "5fb2ca070d9a42f80d21b19e9dafc9e6fdcad5e9",
+    "source_commit_date": "2026-07-07T21:03:00+08:00",
+    "license": "MIT",
+    "maintainer": "tzwkb",
+    "primary_language": "Python"
+  },
+  "runx": {
+    "version_output": "runx-cli 0.7.1",
+    "skill": "runx/sourcey@sha-a2bbab837182",
+    "run_id": "run_sourcey_8eaa98ce79cf",
+    "receipt_ref": "runx:receipt:sha256:9c6f92e140c4f6546e5133bb6bfa7bfbd70c9ec087050ee539dced298af9fba9",
+    "receipt_directory": "docs/bounty/frantic-33/receipts",
+    "verification_mode": "local-development",
+    "verified_receipt_count": 12
+  },
+  "sourcey": {
+    "version_output": "3.6.5",
+    "adapter": "markdown",
+    "config": "docs/sourcey.config.ts",
+    "local_command": "cd docs && sourcey build -o ../.sourcey/runx-docs --quiet",
+    "deployment_method": "prebuilt Sourcey site published from the repository gh-pages branch",
+    "deployment_branch": "gh-pages",
+    "pages": [
+      "introduction",
+      "quickstart",
+      "local-reading",
+      "online-documents",
+      "online-sheets",
+      "smart-sheets",
+      "mcp-tools",
+      "security",
+      "api-reference",
+      "troubleshooting"
+    ]
+  },
+  "coverage": {
+    "documented_public_apis": 38,
+    "minimum_required": 20,
+    "source_files_sampled": [
+      "server.py",
+      "online/docs.py",
+      "online/local_docs.py",
+      "online/sheets.py",
+      "online/smartsheets.py",
+      "online/wecom_cli.py",
+      "decrypt/read_doc.py",
+      "decrypt/media_export.py"
+    ],
+    "notes": "The reference covers the public CLI foundation, normal documents, local document fallback, standard online sheets, smart sheets, and local file utilities. Workflow pages add real examples, confirmation rules, permission limits, and troubleshooting guidance."
+  },
+  "observations": [
+    {
+      "id": "runx_cli_version",
+      "result": "runx-cli 0.7.1",
+      "evidence": "npx -y @runxhq/cli@latest --version"
+    },
+    {
+      "id": "sourcey_version",
+      "result": "3.6.5",
+      "evidence": "sourcey --version"
+    },
+    {
+      "id": "sourcey_graph",
+      "result": "sealed",
+      "evidence": "All 11 Sourcey graph steps succeeded: discover, approve, author, write, build, critique, revise, rebuild, verify, and package."
+    },
+    {
+      "id": "receipt_tree",
+      "result": "valid",
+      "evidence": "runx verify reported one valid tree with 12 receipts and no findings."
+    },
+    {
+      "id": "repository_activity",
+      "result": "recent",
+      "evidence": "Pinned source commit 5fb2ca070d9a42f80d21b19e9dafc9e6fdcad5e9 is dated 2026-07-07."
+    },
+    {
+      "id": "license",
+      "result": "MIT",
+      "evidence": "Repository LICENSE at the pinned source commit."
+    },
+    {
+      "id": "page_build",
+      "result": "10 of 10 pages present and non-empty",
+      "evidence": "Fresh Sourcey build structural verification."
+    },
+    {
+      "id": "api_coverage",
+      "result": "38 source entries and 38 rendered API headings",
+      "evidence": "docs/api-reference.md and api-reference.html heading counts."
+    },
+    {
+      "id": "local_links",
+      "result": "0 broken links",
+      "evidence": "All relative href targets across the generated HTML set resolved."
+    },
+    {
+      "id": "card_icons",
+      "result": "4 valid, 0 invalid",
+      "evidence": "Sourcey build icon validation against Heroicons v2 outline."
+    },
+    {
+      "id": "project_tests",
+      "result": "14 passed, 0 failed",
+      "evidence": "python3 -m unittest discover -s tests"
+    },
+    {
+      "id": "publication_authority",
+      "result": "project-owned and adopted",
+      "evidence": "The Sourcey site is published from the target repository's gh-pages branch, and the documentation link is committed in both project READMEs."
+    }
+  ]
+}
