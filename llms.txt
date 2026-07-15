@@ -1,0 +1,16 @@
+# WeCom Agent
+
+> Local WeCom history access and confirmed online document operations from one Python project.
+
+## Documentation
+
+- [WeCom Agent](/wecom-agent/introduction.html): Local WeCom history access and confirmed online document operations from one Python project.
+- [Quickstart](/wecom-agent/quickstart.html): Install the local dependencies, verify WecomTeam authentication, and run the first safe read.
+- [Local Reading](/wecom-agent/local-reading.html): Decrypt and query authorized WeCom data on macOS or Windows without depending on online history APIs.
+- [Online Documents](/wecom-agent/online-documents.html): Create WeCom documents, replace Markdown content, and use local cache fallback when online body reads are unavailable.
+- [Online Sheets](/wecom-agent/online-sheets.html): Create WeCom sheets, inspect sheet structure, add subsheets, append rows, and update ranges.
+- [Smart Sheets](/wecom-agent/smart-sheets.html): Manage smart-sheet containers, fields, and records through confirmed WecomTeam CLI operations.
+- [MCP Tools](/wecom-agent/mcp-tools.html): Read-only local tools and confirmation-gated online tools exposed by server.py.
+- [Security and Data Handling](/wecom-agent/security.html): Authorization, secret handling, confirmation gates, and freshness rules for WeCom Agent.
+- [Python API Reference](/wecom-agent/api-reference.html): Public helpers for WecomTeam CLI calls, documents, standard sheets, smart sheets, and local document access.
+- [Troubleshooting](/wecom-agent/troubleshooting.html): Diagnose missing CLI commands, enterprise permission boundaries, local file fallbacks, and confirmation failures.
