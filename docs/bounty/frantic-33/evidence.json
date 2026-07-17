@@ -1,7 +1,7 @@
 {
   "schema": "frantic.sourcey.evidence.v1",
-  "summary": "WeCom Agent now has a ten-page Sourcey documentation site grounded in its maintained MIT-licensed Python repository, with 38 public APIs documented, a sealed runx Sourcey receipt, project-owned GitHub Pages deployment, and repository README adoption.",
-  "public_url": "https://tzwkb.github.io/wecom-agent/",
+  "summary": "WeCom Agent now has a ten-page Sourcey documentation site grounded in its maintained MIT-licensed Python repository, with 38 public APIs documented, a sealed runx Sourcey receipt, a dedicated Read the Docs project, and repository README adoption.",
+  "public_url": "https://wecom-agent.readthedocs.io/en/latest/",
   "repository": {
     "url": "https://github.com/tzwkb/wecom-agent",
     "source_commit": "5fb2ca070d9a42f80d21b19e9dafc9e6fdcad5e9",
@@ -24,8 +24,10 @@
     "adapter": "markdown",
     "config": "docs/sourcey.config.ts",
     "local_command": "cd docs && sourcey build -o ../.sourcey/runx-docs --quiet",
-    "deployment_method": "prebuilt Sourcey site published from the repository gh-pages branch",
-    "deployment_branch": "gh-pages",
+    "deployment_method": "Read the Docs custom build from the connected GitHub repository using .readthedocs.yaml",
+    "deployment_branch": "main",
+    "deployment_commit": "b2850245f5dd9599cd7d53eece069816a25e886a",
+    "readthedocs_build": 33627849,
     "pages": [
       "introduction",
       "quickstart",
@@ -87,8 +89,8 @@
     },
     {
       "id": "page_build",
-      "result": "10 of 10 pages present and non-empty",
-      "evidence": "Fresh Sourcey build structural verification."
+      "result": "10 of 10 pages and 6 core assets returned HTTP 200",
+      "evidence": "Stranger-reachable verification against wecom-agent.readthedocs.io after Read the Docs build 33627849."
     },
     {
       "id": "api_coverage",
@@ -98,7 +100,7 @@
     {
       "id": "local_links",
       "result": "0 broken links",
-      "evidence": "All relative href targets across the generated HTML set resolved."
+      "evidence": "All 12 unique relative href/src targets across the live generated HTML set returned HTTP 200."
     },
     {
       "id": "card_icons",
@@ -112,8 +114,8 @@
     },
     {
       "id": "publication_authority",
-      "result": "project-owned and adopted",
-      "evidence": "The Sourcey site is published from the target repository's gh-pages branch, and the documentation link is committed in both project READMEs."
+      "result": "credible dedicated documentation home",
+      "evidence": "The dedicated wecom-agent.readthedocs.io project is connected to tzwkb/wecom-agent, builds main through the committed .readthedocs.yaml, and is linked from both project READMEs."
     }
   ]
 }
