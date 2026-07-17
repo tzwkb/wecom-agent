@@ -4,7 +4,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-Codex-blue.svg)](SKILL.md)
 [![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
 
-[Documentation](https://tzwkb.github.io/wecom-agent/) | [English](README.md) | 中文
+[Documentation](https://wecom-agent.readthedocs.io/en/latest/) | [English](README.md) | 中文
 
 **Agent Skill** — 企业微信本地解密读取 + WecomTeam 官方 CLI/Bot 操作助手，支持历史聊天读取、通讯录/会话搜索、媒体/文档定位、待办和在线文档/表格流程。
 

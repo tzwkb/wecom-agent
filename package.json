@@ -1,0 +1,10 @@
+{
+  "name": "wecom-agent-docs",
+  "private": true,
+  "scripts": {
+    "docs:build": "cd docs && sourcey build"
+  },
+  "devDependencies": {
+    "sourcey": "3.6.5"
+  }
+}

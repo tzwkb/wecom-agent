@@ -4,7 +4,7 @@
 [![Agent Skill](https://img.shields.io/badge/Agent%20Skill-Codex-blue.svg)](SKILL.md)
 [![Python](https://img.shields.io/badge/Python-3.x-blue.svg)](https://www.python.org/)
 
-[Documentation](https://tzwkb.github.io/wecom-agent/) | English | [中文](README_ZH.md)
+[Documentation](https://wecom-agent.readthedocs.io/en/latest/) | English | [中文](README_ZH.md)
 
 WeCom local-decrypt reading plus WecomTeam CLI/Bot operation layer for local chat search, media/file discovery, todos, and online documents/sheets.
 

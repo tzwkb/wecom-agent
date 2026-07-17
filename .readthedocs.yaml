@@ -1,0 +1,12 @@
+version: 2
+
+build:
+  os: ubuntu-24.04
+  tools:
+    nodejs: "20"
+  jobs:
+    install:
+      - npm ci
+    build:
+      html:
+        - npm run docs:build -- --output "$READTHEDOCS_OUTPUT/html" --quiet

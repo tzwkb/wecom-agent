@@ -1,9 +1,14 @@
 import { defineConfig, markdown } from "sourcey";
 
+const canonicalUrl = new URL(
+  process.env.READTHEDOCS_CANONICAL_URL ??
+    "https://wecom-agent.readthedocs.io/en/latest/",
+);
+
 export default defineConfig({
   name: "WeCom Agent",
-  siteUrl: "https://tzwkb.github.io",
-  baseUrl: "/wecom-agent/",
+  siteUrl: canonicalUrl.origin,
+  baseUrl: canonicalUrl.pathname,
   repo: "https://github.com/tzwkb/wecom-agent",
   editBranch: "main",
   editBasePath: "docs",
